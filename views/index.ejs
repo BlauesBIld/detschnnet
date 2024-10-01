@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dejans Portfolio</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header>
+    <div class="header-left">
+        <a href="/" class="no-style"><h1>Dejan Zeljko</h1></a>
+    </div>
+    <div class="header-right">
+        <a href="/aboutme">About Me</a>
+        <a href="/streamer">Login</a>
+    </div>
+</header>
+
+<main>
+    <div class="filter-buttons">
+        <button disabled class="filter-button" data-filter="unreal">
+            <img src="/img/unreal-icon.png" alt="Unreal Engine Icon"> Unreal Engine
+        </button>
+        <button class="filter-button" data-filter="unity">
+            <img src="/img/unity-icon.png" alt="Unity Icon"> Unity
+        </button>
+        <button class="filter-button" data-filter="godot">
+            <img src="/img/godot-icon.png" alt="Godot Icon"> Godot
+        </button>
+        <button class="filter-button" data-filter="other">
+            <img src="/img/other-icon.png" alt="Other Icon"> Other
+        </button>
+    </div>
+
+    <div class="card-container">
+        <a href="/games/InvasionAtDawn/index.html" class="card-link">
+            <div class="card" data-engine="unity">
+                <div class="card-image">
+                    <img src="/games/InvasionAtDawn/banner.JPG" alt="Invasion at Dawn Banner">
+                </div>
+                <div class="card-content">
+                    <h2>Invasion At Dawn</h2>
+                    <p>A co-op survival FPS where you must defend a house from zombie hordes in a foggy environment.</p>
+                    <div class="tags">
+                        <p class="tag-label">Tags:</p>
+                        <span>Multiplayer</span>
+                        <span>FPS</span>
+                        <span>Survival</span>
+                    </div>
+                </div>
+                <div class="engine-icon">
+                    <img src="/img/unity-icon.png" alt="Unity">
+                </div>
+            </div>
+        </a>
+
+        <a href="/games/MuseumEscape/index.html" class="card-link">
+            <div class="card" data-engine="godot">
+                <div class="card-image">
+                    <img src="/games/MuseumEscape/banner.JPG" alt="Museum Escape Banner">
+                </div>
+                <div class="card-content">
+                    <h2>Museum Escape</h2>
+                    <p>As the janitor of the Belvedere 21 museum, you wake up inside the museum. While trying to find the exit, you get pulled into paintings and art works. Discover the deeper meaning of art.</p>
+                    <div class="tags">
+                        <p class="tag-label">Tags:</p>
+                        <span>Pixelart</span>
+                        <span>2D</span>
+                        <span>Platformer</span>
+                    </div>
+                </div>
+                <div class="engine-icon">
+                    <img src="/img/godot-icon.png" alt="Godot">
+                </div>
+            </div>
+        </a>
+
+        <a href="/games/ProtectSantasAnvil/index.html" class="card-link">
+            <div class="card" data-engine="unity">
+                <div class="card-image">
+                    <img src="/games/ProtectSantasAnvil/banner.JPG" alt="Protect Santa's Anvil Banner">
+                </div>
+                <div class="card-content">
+                    <h2>Protect Santa's Anvil</h2>
+                    <p>A single-player tower defense game where you defend Santa's anvil from waves of villains using toy weapons.</p>
+                    <div class="tags">
+                        <p class="tag-label">Tags:</p>
+                        <span>Tower Defense</span>
+                        <span>Christmas</span>
+                    </div>
+                </div>
+                <div class="engine-icon">
+                    <img src="/img/unity-icon.png" alt="Unity">
+                </div>
+            </div>
+        </a>
+
+        <a href="/games/BasketballShooterRace/index.html" class="card-link">
+            <div class="card" data-engine="unity">
+                <div class="card-image">
+                    <img src="/games/BasketballShooterRace/banner.JPG" alt="Basketball Shooter Race Banner">
+                </div>
+                <div class="card-content">
+                    <h2>Basketball Shooter Race</h2>
+                    <p>A minigame where you shoot basketballs to achieve a high score. Timed events and repeated hits give boosts. Can you beat the hardest NPC?</p>
+                    <div class="tags">
+                        <p class="tag-label">Tags:</p>
+                        <span>Basketball</span>
+                        <span>Arcade</span>
+                        <span>Score</span>
+                        <span>NPC</span>
+                    </div>
+                </div>
+                <div class="engine-icon">
+                    <img src="/img/unity-icon.png" alt="Unity">
+                </div>
+            </div>
+        </a>
+
+        <a href="/games/AITextDungeon/index.html" class="card-link">
+            <div class="card" data-engine="other">
+                <div class="card-image">
+                    <img src="/games/AITextDungeon/banner.JPG" alt="AI Text Dungeon Banner">
+                </div>
+                <div class="card-content">
+                    <h2>AI Text Dungeon</h2>
+                    <p>Dive into your own story and shape it to your will. Face challenges or live a completely random life, like being a... loaf of bread?</p>
+                    <div class="tags">
+                        <p class="tag-label">Tags:</p>
+                        <span>Android</span>
+                        <span>Text</span>
+                        <span>LLM</span>
+                    </div>
+                </div>
+                <div class="engine-icon">
+                    <img src="/img/other-icon.png" alt="Other">
+                </div>
+            </div>
+        </a>
+
+        <a href="/games/Magedle/index.html" class="card-link">
+            <div class="card" data-engine="other">
+                <div class="card-image">
+                    <img src="/games/Magedle/banner.JPG" alt="Magedle Banner">
+                </div>
+                <div class="card-content">
+                    <h2>Magedle</h2>
+                    <p>As the village's elder mage, defend against waves of monsters. Collect loot and trade with a traveling merchant riding a rhinoceros.</p>
+                    <div class="tags">
+                        <p class="tag-label">Tags:</p>
+                        <span>Level</span>
+                        <span>Defense</span>
+                        <span>Mage</span>
+                        <span>Loot</span>
+                    </div>
+                </div>
+                <div class="engine-icon">
+                    <img src="/img/other-icon.png" alt="Other">
+                </div>
+            </div>
+        </a>
+
+        <a href="/games/2DMmoRpg/index.html" class="card-link">
+            <div class="card" data-engine="unity">
+                <div class="card-image">
+                    <img src="/games/2DMmoRpg/banner.JPG" alt="2D MMO RPG Banner">
+                </div>
+                <div class="card-content">
+                    <h2>2D MMO RPG</h2>
+                    <p>A 2D bullet hell multiplayer game inspired by Realm of the Mad God, but without pixel art.</p>
+                    <div class="tags">
+                        <p class="tag-label">Tags:</p>
+                        <span>2D</span>
+                        <span>Multiplayer</span>
+                        <span>Bullet Hell</span>
+                    </div>
+                </div>
+                <div class="engine-icon">
+                    <img src="/img/unity-icon.png" alt="Unity">
+                </div>
+            </div>
+        </a>
+
+        <a href="/games/MiniRPG/index.html" class="card-link">
+            <div class="card" data-engine="unity">
+                <div class="card-image">
+                    <img src="/games/MiniRPG/banner.JPG" alt="Mini RPG Banner">
+                </div>
+                <div class="card-content">
+                    <h2>Mini RPG</h2>
+                    <p>A 4-player co-op game where players expand their platform by completing dungeons and defeating enemies.</p>
+                    <div class="tags">
+                        <p class="tag-label">Tags:</p>
+                        <span>3D</span>
+                        <span>Multiplayer</span>
+                        <span>RPG</span>
+                    </div>
+                </div>
+                <div class="engine-icon">
+                    <img src="/img/unity-icon.png" alt="Unity">
+                </div>
+            </div>
+        </a>
+    </div>
+</main>
+
+<footer>
+    <div class="footer-buttons">
+        <a href="https://www.linkedin.com/in/dejan-zeljko/" target="_blank">
+            <img src="/img/linkedin-icon.png" alt="LinkedIn">
+        </a>
+        <a href="https://github.com/blauesbild" target="_blank">
+            <img src="/img/github-icon.png" alt="GitHub">
+        </a>
+        <a href="mailto:de.zeljko@gmx.at">
+            <img src="/img/email-icon.png" alt="Email">
+        </a>
+    </div>
+</footer>
+
+<script src="/js/script.js"></script>
+</body>
+</html>

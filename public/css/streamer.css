@@ -1,0 +1,9 @@
+.btn-twitch {
+    background-color: #7937da; /* Twitch's purple color */
+    color: #ffffff; /* White text color */
+}
+
+.btn-twitch:hover {
+    background-color: #661bd3; /* Twitch's purple color */
+    color: #ffffff; /* White text color */
+}

@@ -1,0 +1,36 @@
+
+/* Basic Reset */
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: Arial, sans-serif;
+}
+
+/* Flexbox Centering */
+
+.centered_container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 91vh;
+    padding-bottom: 60px;
+}
+
+.hero_section {
+    text-align: center;
+    max-width: 800px;
+    padding: 20px;
+}
+
+.hero_section h1 {
+    margin: 0 0 20px;
+    font-size: 3.5rem;
+}
+
+.hero_section p {
+    font-size: 1.5rem;
+    line-height: 1.5;
+}

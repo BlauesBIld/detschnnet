@@ -1,0 +1,79 @@
+html{
+    cursor: url('../../Assets/Sprites/mouseIconScaled.png'), auto;
+}
+
+#controlsImage{
+    width: 30%;
+    height: 30%;
+    margin: 30px;
+}
+
+.startScreenText{
+    padding-left: 50px;
+    padding-right: 50px;
+}
+
+.interactContainer{
+    position: absolute;
+    margin-left: 5px;
+    margin-top: 625px;
+    display: initial;
+    height: 295px;
+    width: 500px;
+    background-color: chocolate;
+    text-align: center;
+}
+
+#interactButton{
+    margin-top: 80px;
+    margin-bottom: 10px;
+}
+
+button, a {
+    background: #D2691EFF;
+    border: 2px solid #000000;
+    border-radius: 8px;
+    box-shadow: rgba(0, 0, 0, 0.1) 1px 2px 4px;
+    box-sizing: border-box;
+    color: #000000;
+    cursor: pointer;
+    display: inline-block;
+    font-family: nunito, roboto, proxima-nova, "proxima nova", sans-serif;
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 16px;
+    min-height: 40px;
+    outline: 0;
+    padding: 20px 24px;
+    text-align: center;
+    text-rendering: geometricprecision;
+    text-transform: none;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    vertical-align: middle;
+}
+
+button:hover, a:hover,
+button:active, a:active {
+    cursor: url('../../Assets/Sprites/mouseIconScaled.png'), auto;
+    background-color: initial;
+    background-position: 0 0;
+    color: #000000;
+}
+
+button:active, a:active {
+    cursor: url('../../Assets/Sprites/mouseIconScaled.png'), auto;
+    opacity: .5;
+}
+
+button:disabled, a:disabled {
+    cursor: url('../../Assets/Sprites/mouseIconScaled.png'), auto;
+    opacity: 30%;
+}
+
+#startGameButton{
+    font-size: 48px;
+    font-weight: 600;
+    line-height: 40px;
+}

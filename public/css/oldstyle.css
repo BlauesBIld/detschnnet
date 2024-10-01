@@ -1,0 +1,458 @@
+/* Base CSS */
+.alignleft {
+    float: left;
+    margin-right: 15px;
+}
+
+.alignright {
+    float: right;
+    margin-left: 15px;
+}
+
+.aligncenter {
+    display: block;
+    margin: 0 auto 15px;
+}
+
+a:focus {
+    outline: 0 solid
+}
+
+* {
+    box-sizing: border-box;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin: 0 0 15px;
+    color: #ffffff;
+    font-family: "Roboto", sans-serif;
+}
+
+body {
+    color: #545051;
+    font-weight: 300;
+    font-family: "Roboto", sans-serif;
+    background: black;
+    color: white;
+}
+
+
+.selector-for-some-widget {
+    box-sizing: content-box;
+}
+
+a:hover {
+    text-decoration: none
+}
+
+button:focus {
+    outline: 0;
+    outline: 5px auto -webkit-focus-ring-color;
+}
+
+ul {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+
+.typeJsWrapper .typeJsText {
+    display: inline-block;
+    padding: 0;
+    border-right: 1px solid #414141;
+}
+
+
+/* header-area-start */
+
+.header {
+    background: #000000;
+    height: 9vh;
+    display: flex;
+    align-items: center;
+    padding: 0 26px;
+}
+
+.header__flex {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header__left {
+    display: flex;
+    align-items: center;
+}
+
+.header__right {
+    display: flex;
+    align-items: center;
+}
+
+.header__home a {
+    /*! background: #E37B00; */
+    border-radius: 16px;
+    width: 65px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+}
+
+.header__home {
+    margin-right: 16px;
+}
+
+.header__btn {
+    display: flex;
+    align-items: center;
+}
+
+.header__btn a {
+    margin-right: 16px;
+    width: 200px;
+    height: 60px;
+    /*! background: #E37B00; */
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-weight: 400;
+    font-size: 32px;
+    line-height: 39px;
+    color: #FFFFFF;
+    transition: 0.3s;
+}
+
+.header__btn a:hover {
+    /*! background: #6441A5; */
+    color: #E37B00;
+}
+
+.header__btn a img {
+    margin-left: 6px;
+}
+
+.header__right a {
+    width: 251px;
+    height: 60px;
+    /*! background: #6441A5; */
+    border-radius: 16px;
+    font-weight: 400;
+    font-size: 32px;
+    line-height: 39px;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.header__right a img {
+    margin-left: 10px;
+}
+
+/* header-area-end */
+
+/* hero-area-start */
+
+.hero {
+    background-color: #000;
+    height: auto;
+    min-height: 91vh;
+    overflow-y: auto;
+}
+
+.hero__flex {
+    display: flex;
+    justify-content: space-between;
+}
+
+.hero__left {
+    width: 62.9%;
+    height: 91vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero__left_gradient {
+    background: linear-gradient(178.91deg, #000000 21.69%, #212121 99.07%);
+}
+
+.hero__right {
+    width: 37.1%;
+    position: relative;
+}
+
+.hero__left h1 {
+    /*! color: black; */
+    /*! -webkit-text-fill-color: white; */
+    /*! -webkit-text-stroke-width: 1px; */
+    /*! -webkit-text-stroke-color: black; */
+    /*! font-weight: 700; */
+    /*! font-size: 80px; */
+    /*! line-height: 97px; */
+    /*! padding: 0 80px; */
+    font-weight: 700;
+    font-size: 120px;
+    line-height: 124px;
+    margin-top: 40px;
+    color: #FFFFFF;
+}
+
+.hero__slider {
+    height: 100%;
+}
+
+.single__item {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: end;
+    background-size: cover;
+    background-position: center center;
+    filter: brightness(50%);
+}
+
+.hero__right .owl-stage-outer {
+    height: 100%;
+}
+
+.owl-stage {
+    height: 100%;
+}
+
+.owl-item {
+    height: 100%;
+}
+
+.single__item h3 {
+    color: black;
+    -webkit-text-fill-color: white;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: black;
+    font-weight: 700;
+    font-size: 80px;
+    line-height: 97px;
+    /*! padding: 0 80px; */
+    max-width: 514px;
+    text-align: center;
+    margin-bottom: 115px;
+}
+
+.single__item {
+    padding-bottom: 75px;
+}
+
+a.more_btn {
+    width: 211px;
+    height: 80px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 40px;
+    line-height: 48px;
+    color: #FFFFFF;
+    position: absolute;
+    left: 0;
+    z-index: 99;
+    right: 0;
+    margin: auto;
+    bottom: 75px;
+    transition: 0.3s;
+}
+
+h3.game_title {
+    color: black;
+    -webkit-text-fill-color: white;
+    -webkit-text-stroke-width: 2px;
+    -webkit-text-stroke-color: black;
+    font-weight: 700;
+    font-size: 80px;
+    line-height: 97px;
+    max-width: 514px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 0;
+    z-index: 99;
+    right: 0;
+    bottom: 225px;
+}
+
+.owl-nav button {
+    position: absolute;
+    left: 109px;
+    bottom: 75px;
+    width: 80px;
+    height: 80px;
+    background: rgba(0, 0, 0, 0.7) !important;
+    border-radius: 20px;
+    font-size: 45px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    transition: .3s;
+}
+
+.owl-nav span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.owl-dots {
+    display: none;
+}
+
+.owl-nav button.owl-next {
+    left: auto;
+    right: 109px;
+}
+
+.header__home a:hover {
+    /*! background: #6441A5; */
+}
+
+.header__right a:hover {
+    /*! background: #E37B00; */
+    color: #6441A5;
+}
+
+a.more_btn:hover {
+    background: #000000c4;
+}
+
+/* hero-area-end */
+
+.typing-container {
+    width: 100%;
+    margin-left: 30px;
+    height: 350px;
+}
+
+.owl-nav span {
+    margin-top: -8px;
+    font-size: 59px;
+}
+
+.body_wrapper {
+    height: auto; /* Instead of 100vh; allows the container to grow */
+    overflow-y: auto; /* Enables vertical scrolling */
+}
+
+
+.header__home a:hover svg {
+    fill: #E37B00;
+    filter: brightness(0) saturate(100%) invert(56%) sepia(95%) saturate(3290%) hue-rotate(9deg) brightness(98%) contrast(101%);
+}
+
+.header__home svg {
+    transition: 0.3s;
+}
+
+.header__btn a:hover svg {
+    fill: #E37B00;
+}
+
+.header__btn a svg {
+    transition: 0.3s;
+    fill: #fff;
+    width: 32px;
+    margin-left: 9px;
+    margin-bottom: -8px;
+}
+
+.header__right a:hover svg {
+    fill: #6441A5;
+}
+
+.header__right a svg {
+    transition: 0.3s;
+    fill: #fff;
+    width: 32px;
+    margin-left: 9px;
+    margin-bottom: -8px;
+}
+
+.owl-nav button:hover {
+    background: #000000c4 !important;
+}
+
+/* Existing styles */
+/* (Your current CSS content) */
+
+/* New Form and Hero Section Styles */
+.hero .container {
+    max-width: 600px;
+    margin: auto;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.form-group label {
+    color: white;
+}
+
+/* Form Submit Button Specific to Hero Section */
+.hero .container form .theme__btn {
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 15px; /* Additional spacing */
+    display: block; /* Center button */
+    width: auto; /* Adjust width as needed */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.hero .container form .theme__btn:hover {
+    background-color: #0056b3;
+}
+
+/* Adjust form group spacing */
+.hero .container form .form-group {
+    margin-bottom: 20px; /* Increase spacing between form elements */
+}
+
+/* Ensure labels are also spaced nicely */
+.hero .container form .form-group label {
+    display: block;
+    margin-bottom: 10px; /* Adds space below the label */
+    color: white;
+}
+
+/* Update button spacing without affecting header */
+.hero .container form .theme__btn {
+    padding: 10px 15px; /* Adjust padding for better click area */
+    margin-top: 25px; /* More space above the button */
+    width: auto; /* Adjust based on content */
+    margin-left: auto;
+    margin-right: auto;
+}

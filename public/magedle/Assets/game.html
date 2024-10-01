@@ -1,0 +1,55 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Magedle</title>
+    <link rel="stylesheet" href="Style/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp" rel="stylesheet">
+</head>
+<body style="background-color: black">
+    <canvas id="gameCanvas" width="1300" height="920" style="width: 1300px; height: 920px; background-color: lawngreen;"></canvas>
+    <canvas id="uiCanvas" width="500" height="620" style="width: 500px; height: 620px; margin-left:5px; position: absolute; background-color: chocolate"></canvas>
+    <div class="interactContainer" style="font-family: 'MedievalSharp'">
+        <button id="interactButton">Interact</button><br>
+        <button id="waveButton">Start wave 1</button>
+    </div>
+</body>
+<script src="Scripts/Managers/gameManager.js"></script>
+<script src="Scripts/Managers/waveManager.js"></script>
+<script src="Scripts/Managers/uiManager.js"></script>
+<script src="Scripts/Managers/playerManager.js"></script>
+
+<script src="Scripts/Canvases/canvas.js"></script>
+<script src="Scripts/Canvases/canvas.js"></script>
+
+<script src="Scripts/Config/wavesConfig.js"></script>
+<script src="Scripts/Config/itemConfig.js"></script>
+<script src="Scripts/Config/monsterConfig.js"></script>
+
+<script src="Scripts/GameObjects/Structures/gameObject.js"></script>
+<script src="Scripts/GameObjects/Structures/imageObject.js"></script>
+
+<script src="Scripts/GameObjects/enemies/enemy.js"></script>
+<script src="Scripts/GameObjects/enemies/bossEnemy.js"></script>
+<script src="Scripts/GameObjects/enemies/slime.js"></script>
+<script src="Scripts/GameObjects/enemies/slimeKing.js"></script>
+<script src="Scripts/GameObjects/enemies/crystal.js"></script>
+<script src="Scripts/GameObjects/enemies/crystalKing.js"></script>
+
+<script src="Scripts/GameObjects/grasTile.js"></script>
+<script src="Scripts/GameObjects/attackBall.js"></script>
+<script src="Scripts/GameObjects/player.js"></script>
+<script src="Scripts/GameObjects/castle.js"></script>
+<script src="Scripts/GameObjects/magicBarrier.js"></script>
+<script src="Scripts/GameObjects/magicBarrierLayer.js"></script>
+<script src="Scripts/GameObjects/hpBar.js"></script>
+<script src="Scripts/GameObjects/fadingTitleText.js"></script>
+<script src="Scripts/GameObjects/safezone.js"></script>
+<script src="Scripts/GameObjects/fadingTextPopUp.js"></script>
+<script src="Scripts/GameObjects/fadingImagePopUp.js"></script>
+<script src="Scripts/GameObjects/itemOnFloor.js"></script>
+<script src="Scripts/GameObjects/merchant.js"></script>
+<script src="Scripts/GameObjects/rhino.js"></script>
+
+<script src="Scripts/Setup/stageSetup.js"></script>
+<script src="Scripts/Setup/inputHandling.js"></script>
+</html>

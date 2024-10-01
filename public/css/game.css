@@ -1,0 +1,113 @@
+.hero__left {
+    align-items: start;
+    justify-content: start;
+    display: block;
+    width: 55%;
+    height: 91vh;
+    padding-right: 10px;
+}
+
+.hero__right {
+    width: 45%;
+    position: relative;
+    padding-left: 10px;
+}
+
+.game-details {
+    border: 1px solid #ccc;
+    padding: 20px;
+}
+
+.game-details p {
+    text-align: center;
+}
+
+.game-description {
+    max-height: 75%;
+    overflow-y: auto;
+    padding-right: 30px;
+}
+
+.game-description h1 {
+    font-size: 3.0rem;
+    margin-bottom: 1rem;
+    margin-top: 0px;
+}
+
+.game-title h1 {
+    font-size: 4.0rem;
+    margin-bottom: 0px;
+}
+
+.game-description p {
+    font-size: 1.2rem;
+}
+
+p {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+}
+
+.owl-carousel .item img {
+    border-radius: 15px;
+}
+
+.owl-carousel .owl-nav button.owl-next {
+    right: 10px;
+    bottom: 10px;
+}
+
+.owl-carousel .owl-nav button.owl-prev {
+    left: 10px;
+    bottom: 10px;
+}
+
+.owl-nav button {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background: rgba(0, 0, 0, 0.41) !important;
+    border-radius: 20px;
+    font-size: 20px !important;
+    font-weight: 400 !important;
+    color: #fff !important;
+    transition: .3s;
+}
+
+.owl-nav button:hover {
+    background: rgba(0, 0, 0, 0.49) !important;
+}
+
+.custom-hero-margin {
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+.container {
+    max-width: 1440px;
+}
+
+ul {
+    list-style-type: disc;
+    margin-left: 20px;
+    padding-left: 0;
+    margin-bottom: 20px;
+}
+
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: black;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #3b3b3b;
+    border-radius: 6px;
+}
+
+.owl-carousel {
+    height: 352.78px;
+    width: 627.19px;
+}
