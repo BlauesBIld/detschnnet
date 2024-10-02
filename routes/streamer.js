@@ -38,12 +38,6 @@ router.get('/', authenticationService.authenticateJWT, (req, res) => {
     });
 });
 
-router.get('/yjZZ6DdGZReD4DtacOBfZcfcf1e0u4/:streamer', (req, res) => {
-    streamerController.getTokensForStreamer(req.params.streamer).then((tokens) => {
-        res.json(tokens);
-    });
-});
-
 router.get('/register', authenticationService.authenticateAdmin, userController.registerUser);
 router.post('/register', authenticationService.authenticateAdmin, userController.registeredUser);
 
