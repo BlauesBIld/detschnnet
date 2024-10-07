@@ -24,13 +24,26 @@ router.get('/league/:summonername', (req, res) => {
             riotController.getLeagueDataBySummonerId(summonerData.id).then(res => res.json()).then(leagueData => {
                 riotLogger.info('Request for league data by summoner id: ' + summonerData.id + ' (' + summonerData.gameName + '#' + summonerData.tagLine + ')');
                 leagueData = leagueData.filter(league => league.queueType === 'RANKED_SOLO_5x5');
-                body = {
-                    'name': gameName,
-                    'rank': leagueData[0].tier + ' ' + leagueData[0].rank,
-                    'lp': leagueData[0].leaguePoints + ' LP',
-                    'wins': leagueData[0].wins,
-                    'losses': leagueData[0].losses,
-                    'winrate': Math.round(leagueData[0].wins / (leagueData[0].wins + leagueData[0].losses) * 100) + '%',
+                let body = {};
+                console.log(leagueData);
+                if (leagueData.tier === undefined) {
+                    body = {
+                        'name': gameName,
+                        'rank': "UNRANKED",
+                        'lp': '0 LP',
+                        'wins': 0,
+                        'losses': 0,
+                        'winrate': 'N/A',
+                    }
+                } else {
+                    body = {
+                        'name': gameName,
+                        'rank': leagueData[0].tier + ' ' + leagueData[0].rank,
+                        'lp': leagueData[0].leaguePoints + ' LP',
+                        'wins': leagueData[0].wins,
+                        'losses': leagueData[0].losses,
+                        'winrate': Math.round(leagueData[0].wins / (leagueData[0].wins + leagueData[0].losses) * 100) + '%',
+                    }
                 }
                 res.status(200).json(body);
             }).catch(err => {
