@@ -26,7 +26,7 @@ router.get('/league/:summonername', (req, res) => {
                 leagueData = leagueData.filter(league => league.queueType === 'RANKED_SOLO_5x5');
                 let body = {};
                 console.log(leagueData);
-                if (leagueData.tier === undefined) {
+                if (leagueData[0] === undefined || leagueData[0] === null) {
                     body = {
                         'name': gameName,
                         'rank': "UNRANKED",
