@@ -287,7 +287,7 @@ async function getStreamUpTime(streamerName) {
 
             const body = await response.json();
 
-            if (body.error && body.error.status === 401) {
+            if (body.error && body.status === 401) {
                 await getAndSaveAppAccessToken();
                 return getStreamUpTime(streamerName);
             }
