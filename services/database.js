@@ -11,7 +11,7 @@ const config = new Pool({
 });
 
 config.connect(function(err) {
-    //if (err) throw err;
+    if (err) throw err;
     console.log("Database connected!");
 });
 

@@ -63,7 +63,7 @@ router.get('/getLoLWinLoseRecordForStream/:streamer/:lolname', (req, res) => {
             "lose": 0,
             "winrate": "-"
         };
-        if (!body.data[0]) {
+        if (!body && !body.data && !body.data[0]) {
             res.status(200).send(responseBody);
         } else {
             let timeStamp = body.data[0].started_at;
