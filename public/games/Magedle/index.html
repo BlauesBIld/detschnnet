@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Magedle | Dejan's Portfolio</title>
+    <link rel="stylesheet" href="/css/gamepagestyles.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header>
+    <div class="header-left">
+        <a href="/" class="no-style"><h1>Dejan Zeljko</h1></a>
+    </div>
+    <div class="header-right">
+        <a href="/aboutme">About Me</a>
+        <a href="/streamer">Login</a>
+    </div>
+</header>
+
+<main>
+    <section class="game-header">
+        <h1>Magedle</h1>
+        <img src="/games/Magedle/banner.JPG" alt="Magedle Banner" class="game-banner">
+    </section>
+
+    <section class="game-overview">
+        <h2>Game Overview</h2>
+        <p>Magedle is a web-based defense game developed from scratch in plain JavaScript, featuring a custom engine built with canvas rendering. The player takes on the role of a mage tasked with defending their village from waves of monsters. With each wave, players gain experience points and items, while also having the opportunity to purchase upgrades from a traveling merchant. This project was a complete solo effort, where every element—from the UI to the game loop and collision detection—was developed independently.</p>
+    </section>
+
+    <section class="gameplay-mechanics">
+        <h2>Gameplay Mechanics</h2>
+        <ul>
+            <li><strong>Wave-Based Combat:</strong> Enemies approach from the top in waves, and players must defeat them before they reach the village barrier.</li>
+            <li><strong>Collecting Drops:</strong> Monsters drop equippable items and gold coins, which players can collect between waves.</li>
+            <li><strong>Stats and Levels:</strong> Gaining XP increases the player's level and base stats, including magic damage, spell cast rate, and critical hit chance.</li>
+            <li><strong>Simple Left-Click Combat:</strong> The player attacks using basic left-click fireballs to fend off the advancing enemies.</li>
+            <li><strong>Traveling Merchant:</strong> Between waves, a merchant may appear, offering items in exchange for collected gold coins.</li>
+        </ul>
+    </section>
+
+    <section class="skills">
+        <h2>Skills Demonstrated</h2>
+        <table>
+            <tr>
+                <th>Skill</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>Game Loop Development</td>
+                <td>Implemented a custom game loop for real-time updates, ensuring smooth gameplay and consistent frame updates.</td>
+            </tr>
+            <tr>
+                <td>Canvas Rendering</td>
+                <td>Created all game visuals using the HTML5 canvas API, including characters, items, and environments.</td>
+            </tr>
+            <tr>
+                <td>Custom Collision Detection</td>
+                <td>Developed a collision detection system to handle interactions between the player, enemies, and items.</td>
+            </tr>
+            <tr>
+                <td>User Interface Design</td>
+                <td>Implemented a custom UI for displaying stats, level progress, and item effects, ensuring clarity and functionality.</td>
+            </tr>
+        </table>
+    </section>
+
+    <section class="features">
+        <h2>Game Features</h2>
+        <ul>
+            <li><strong>Defensive Barrier:</strong> Protects the village during enemy waves, dropping between waves to allow item collection.</li>
+            <li><strong>Collectible Items:</strong> Items dropped by enemies provide stat boosts and add depth to the player’s character progression.</li>
+            <li><strong>Traveling Merchant:</strong> Appears between waves, allowing players to spend coins on items and upgrades.</li>
+            <li><strong>Solo-Developed Engine:</strong> Built entirely from scratch with JavaScript, including the game loop, rendering, and physics.</li>
+        </ul>
+    </section>
+
+    <section class="technical-concepts">
+        <h2>Technical Concepts and Tools</h2>
+        <div class="concepts-list">
+            <h3>Game Loop Implementation</h3>
+            <p>Designed a custom game loop to manage timing, actions, and rendering, allowing for consistent updates and real-time gameplay.</p>
+            <br>
+            <h3>Canvas API</h3>
+            <p>Utilized the HTML5 canvas API for drawing characters, environment, and interface, achieving responsive graphics without external libraries.</p>
+            <br>
+            <h3>Collision Detection</h3>
+            <p>Developed a collision detection system from scratch to handle interactions between players, enemies, and collectibles in the game space.</p>
+        </div>
+    </section>
+
+    <section class="gallery">
+        <h2>Gallery</h2>
+        <img src="/games/Magedle/screenshot1.JPG" alt="Gameplay Screenshot 1" class="gallery-img">
+        <img src="/games/Magedle/screenshot2.JPG" alt="Gameplay Screenshot 2" class="gallery-img">
+        <img src="/games/Magedle/screenshot3.JPG" alt="Gameplay Screenshot 3" class="gallery-img">
+    </section>
+
+    <section class="learning-takeaways">
+        <h2>Learning Takeaways</h2>
+        <p>Developing Magedle as a solo project was a valuable experience in end-to-end game creation, from building a custom engine to designing every aspect of gameplay and visuals. The project strengthened my understanding of JavaScript and canvas, as well as core game development principles such as collision detection and game loop management.</p>
+    </section>
+
+    <section class="tools-used">
+        <h2>Tools Used</h2>
+        <ul>
+            <li><strong>JavaScript:</strong> Main programming language for game logic, engine, and UI implementation.</li>
+            <li><strong>HTML5 Canvas:</strong> Used for rendering all visual elements directly within the web browser.</li>
+            <li><strong>Jetbrains WebStorm:</strong> JavaScript IDE.</li>
+        </ul>
+    </section>
+</main>
+
+<footer>
+    <div class="footer-buttons">
+        <a href="https://www.linkedin.com/in/dejan-zeljko/" target="_blank">
+            <img src="/img/linkedin-icon.png" alt="LinkedIn">
+        </a>
+        <a href="https://github.com/blauesbild" target="_blank">
+            <img src="/img/github-icon.png" alt="GitHub">
+        </a>
+        <a href="mailto:de.zeljko@gmx.at">
+            <img src="/img/email-icon.png" alt="Email">
+        </a>
+    </div>
+</footer>
+
+<script src="/js/script.js"></script>
+</body>
+</html>

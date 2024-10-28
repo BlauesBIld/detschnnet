@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Dejans Portfolio</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style<%= styleVersion %>.css">
 </head>
 <body>
 <header>
@@ -18,7 +18,7 @@
 
 <main>
     <div class="filter-buttons">
-        <button disabled class="filter-button" data-filter="unreal">
+        <button class="filter-button" data-filter="unreal">
             <img src="/img/unreal-icon.png" alt="Unreal Engine Icon"> Unreal Engine
         </button>
         <button class="filter-button" data-filter="unity">
@@ -33,6 +33,67 @@
     </div>
 
     <div class="card-container">
+        <a href="/games/ToonTanks/index.html" class="card-link">
+            <div class="card" data-engine="unreal">
+                <div class="card-image">
+                    <img src="/games/ToonTanks/banner.JPG" alt="ToonTanks Banner">
+                </div>
+                <div class="card-content">
+                    <h2>Toon Tanks</h2>
+                    <p>Play as a tank, destroy obstacles, and take down turrets to reach the exit.</p>
+                    <div class="tags">
+                        <p class="tag-label">Tags:</p>
+                        <span>SinglePlayer</span>
+                        <span>Arcade</span>
+                        <span>Tank</span>
+                    </div>
+                </div>
+                <div class="engine-icon">
+                    <img src="/img/unreal-icon.png" alt="Unreal Engine">
+                </div>
+            </div>
+        </a>
+
+        <a href="/games/CryptRaider/index.html" class="card-link">
+            <div class="card" data-engine="unreal">
+                <div class="card-image">
+                    <img src="/games/CryptRaider/banner.JPG" alt="Crypt Raider Banner">
+                </div>
+                <div class="card-content">
+                    <h2>Crypt Raider</h2>
+                    <p>Navigate a crypt, unlock hidden doors, and solve puzzles to find a golden statue.</p>
+                    <div class="tags">
+                        <p class="tag-label">Tags:</p>
+                        <span>SinglePlayer</span>
+                        <span>Puzzle</span>
+                    </div>
+                </div>
+                <div class="engine-icon">
+                    <img src="/img/unreal-icon.png" alt="Unreal Engine">
+                </div>
+            </div>
+        </a>
+
+        <a href="/games/ObstacleAssault/index.html" class="card-link">
+            <div class="card" data-engine="unreal">
+                <div class="card-image">
+                    <img src="/games/ObstacleAssault/banner.JPG" alt="Obstacle Assault Banner">
+                </div>
+                <div class="card-content">
+                    <h2>Obstacle Assault</h2>
+                    <p>A third-person platformer that served as an introduction to blueprints.</p>
+                    <div class="tags">
+                        <p class="tag-label">Tags:</p>
+                        <span>SinglePlayer</span>
+                        <span>Platformer</span>
+                    </div>
+                </div>
+                <div class="engine-icon">
+                    <img src="/img/unreal-icon.png" alt="Unreal Engine">
+                </div>
+            </div>
+        </a>
+
         <a href="/games/InvasionAtDawn/index.html" class="card-link">
             <div class="card" data-engine="unity">
                 <div class="card-image">
@@ -40,7 +101,7 @@
                 </div>
                 <div class="card-content">
                     <h2>Invasion At Dawn</h2>
-                    <p>A co-op survival FPS where you must defend a house from zombie hordes in a foggy environment.</p>
+                    <p>Defend a house from zombie waves in a foggy, immersive co-op experience.</p>
                     <div class="tags">
                         <p class="tag-label">Tags:</p>
                         <span>Multiplayer</span>
@@ -61,12 +122,12 @@
                 </div>
                 <div class="card-content">
                     <h2>Museum Escape</h2>
-                    <p>As the janitor of the Belvedere 21 museum, you wake up inside the museum. While trying to find the exit, you get pulled into paintings and art works. Discover the deeper meaning of art.</p>
+                    <p>Play as a janitor who gets pulled into paintings, discovering the magic of art.</p>
                     <div class="tags">
                         <p class="tag-label">Tags:</p>
-                        <span>Pixelart</span>
-                        <span>2D</span>
+                        <span>SinglePlayer</span>
                         <span>Platformer</span>
+                        <span>2D</span>
                     </div>
                 </div>
                 <div class="engine-icon">
@@ -82,11 +143,11 @@
                 </div>
                 <div class="card-content">
                     <h2>Protect Santa's Anvil</h2>
-                    <p>A single-player tower defense game where you defend Santa's anvil from waves of villains using toy weapons.</p>
+                    <p>Defend Santa's anvil from waves of enemies using unique toy weapons.</p>
                     <div class="tags">
                         <p class="tag-label">Tags:</p>
+                        <span>SinglePlayer</span>
                         <span>Tower Defense</span>
-                        <span>Christmas</span>
                     </div>
                 </div>
                 <div class="engine-icon">
@@ -102,13 +163,12 @@
                 </div>
                 <div class="card-content">
                     <h2>Basketball Shooter Race</h2>
-                    <p>A minigame where you shoot basketballs to achieve a high score. Timed events and repeated hits give boosts. Can you beat the hardest NPC?</p>
+                    <p>Compete for a high score in a timed basketball shootout with NPC rivals.</p>
                     <div class="tags">
                         <p class="tag-label">Tags:</p>
-                        <span>Basketball</span>
+                        <span>SinglePlayer</span>
                         <span>Arcade</span>
-                        <span>Score</span>
-                        <span>NPC</span>
+                        <span>Sports</span>
                     </div>
                 </div>
                 <div class="engine-icon">
@@ -124,12 +184,11 @@
                 </div>
                 <div class="card-content">
                     <h2>AI Text Dungeon</h2>
-                    <p>Dive into your own story and shape it to your will. Face challenges or live a completely random life, like being a... loaf of bread?</p>
+                    <p>Create your own story and explore endless possibilities in a text-based world.</p>
                     <div class="tags">
                         <p class="tag-label">Tags:</p>
-                        <span>Android</span>
-                        <span>Text</span>
-                        <span>LLM</span>
+                        <span>SinglePlayer</span>
+                        <span>Text Adventure</span>
                     </div>
                 </div>
                 <div class="engine-icon">
@@ -145,13 +204,12 @@
                 </div>
                 <div class="card-content">
                     <h2>Magedle</h2>
-                    <p>As the village's elder mage, defend against waves of monsters. Collect loot and trade with a traveling merchant riding a rhinoceros.</p>
+                    <p>Defend your village with magic, collect loot, and trade with unique merchants.</p>
                     <div class="tags">
                         <p class="tag-label">Tags:</p>
-                        <span>Level</span>
+                        <span>SinglePlayer</span>
                         <span>Defense</span>
-                        <span>Mage</span>
-                        <span>Loot</span>
+                        <span>Fantasy</span>
                     </div>
                 </div>
                 <div class="engine-icon">
@@ -167,11 +225,11 @@
                 </div>
                 <div class="card-content">
                     <h2>2D MMO RPG</h2>
-                    <p>A 2D bullet hell multiplayer game inspired by Realm of the Mad God, but without pixel art.</p>
+                    <p>A 2D bullet-hell multiplayer game inspired by Realm of the Mad God.</p>
                     <div class="tags">
                         <p class="tag-label">Tags:</p>
-                        <span>2D</span>
                         <span>Multiplayer</span>
+                        <span>2D</span>
                         <span>Bullet Hell</span>
                     </div>
                 </div>
@@ -188,10 +246,9 @@
                 </div>
                 <div class="card-content">
                     <h2>Mini RPG</h2>
-                    <p>A 4-player co-op game where players expand their platform by completing dungeons and defeating enemies.</p>
+                    <p>A co-op game where players expand their territory by completing dungeons.</p>
                     <div class="tags">
                         <p class="tag-label">Tags:</p>
-                        <span>3D</span>
                         <span>Multiplayer</span>
                         <span>RPG</span>
                     </div>

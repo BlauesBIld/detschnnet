@@ -1,36 +1,295 @@
-
-/* Basic Reset */
-body, html {
+/* General Reset */
+* {
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
-    font-family: Arial, sans-serif;
+    box-sizing: border-box;
 }
 
-/* Flexbox Centering */
+/* Body and Background */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background-color: #121212;
+    color: #FFFFFF;
+    font-family: Arial, sans-serif;
+    font-size: 16px; /* Reverting to default font size */
+}
 
-.centered_container {
+/* Header */
+header {
+    background-color: #1F1F1F;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    box-sizing: border-box;
+    z-index: 1000;
+}
+
+.header-left, .header-right {
+    display: flex;
+    align-items: center;
+}
+
+.header-right a {
+    color: #FFFFFF;
+    padding: 10px 20px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.header-right a:hover {
+    background-color: #333333;
+    border-radius: 5px;
+}
+
+/* Main Content Area */
+main {
+    margin-top: 80px;
+    margin-bottom: 60px;
+    padding: 20px 30%;
+    height: calc(100% - 140px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+main::-webkit-scrollbar {
+    width: 12px;
+}
+
+main::-webkit-scrollbar-track {
+    background: #1F1F1F;
+}
+
+main::-webkit-scrollbar-thumb {
+    background-color: #333333;
+    border-radius: 6px;
+    border: 3px solid #1F1F1F;
+}
+
+main {
+    scrollbar-width: thin;
+    scrollbar-color: #333333 #1F1F1F;
+}
+
+/* Intro Section */
+.intro-section {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.profile-pic {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 4px solid #333333;
+    margin-bottom: 20px;
+}
+
+.intro-text h1 {
+    font-size: 2.5rem;
+    color: #FFFFFF;
+    margin-bottom: 0.5rem;
+}
+
+/* Custom font size for description */
+.intro-text p {
+    font-size: 1.125rem; /* Larger font size for description */
+    line-height: 1.6;
+    color: #CCCCCC;
+}
+
+/* Experience Timeline */
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    margin-bottom: 40px;
+}
+
+.timeline-event {
+    background-color: #333333;
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    border-left: 3px solid #a3c9f1;
+}
+
+.timeline-event h3 {
+    font-size: 1rem;
+    color: #a3c9f1;
+    margin-bottom: 5px;
+}
+
+.timeline-event p {
+    color: #CCCCCC;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Special styling for 2010 event to make it funny */
+.timeline-event:nth-child(1) p {
+    font-style: italic;
+    color: #a3c9f1;
+}
+
+/* Skills Section */
+.skills-section h2, .certifications-section h2, .books-section h2, .projects-section h2, .personal-section h2 {
+    font-size: 1.8rem;
+    color: #f0f0f0;
+    margin-bottom: 1.2rem;
+    border-bottom: 2px solid #333333;
+    padding-bottom: 0.5rem;
+}
+
+.skills-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 10px;
+    margin-bottom: 40px;
+}
+
+.skills-section h3 {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+.skill {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 5px;
+}
+
+.skill p {
+    margin-bottom: 8px;
+}
+
+.skill-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #333333;
+    border-radius: 5px;
+}
+
+.skill-bar span {
+    display: block;
+    height: 100%;
+    background-color: #a3c9f1;
+    border-radius: 5px;
+}
+
+/* Certifications, Books, and Projects Sections */
+.certifications-section ul, .books-section ul, .projects-section ul, .personal-section ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin-top: 15px;
+    color: #CCCCCC;
+}
+
+.certifications-section ul li, .books-section ul li, .projects-section ul li {
+    margin-bottom: 15px;
+}
+
+.certifications-section ul, .books-section ul, .projects-section ul {
+    margin-bottom: 35px;
+}
+
+.books-section a {
+    color: #a3c9f1;
+    text-decoration: none;
+}
+
+.books-section a:hover {
+    text-decoration: underline;
+}
+
+/* Project Icons */
+.projects-section li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.project-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+}
+
+/* Gallery Images */
+.gallery-img {
+    width: 100%;
+    max-width: 300px;
+    margin: 0.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Footer */
+footer {
+    background-color: #1F1F1F;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
-    text-align: center;
-    height: 91vh;
-    padding-bottom: 60px;
+    z-index: 1000;
 }
 
-.hero_section {
-    text-align: center;
-    max-width: 800px;
-    padding: 20px;
+.footer-buttons a {
+    display: inline-block;
+    margin: 0 10px;
 }
 
-.hero_section h1 {
-    margin: 0 0 20px;
-    font-size: 3.5rem;
+.footer-buttons img {
+    width: 24px;
+    height: 24px;
+    filter: invert(100%);
 }
 
-.hero_section p {
-    font-size: 1.5rem;
-    line-height: 1.5;
+/* Media Queries */
+@media (max-width: 768px) {
+    main {
+        padding: 20px 8%;
+    }
+
+    header, footer {
+        height: 50px;
+    }
+
+    .footer-buttons img {
+        width: 20px;
+        height: 20px;
+    }
+
+    .intro-text h1 {
+        font-size: 2rem;
+    }
+
+    .profile-pic {
+        width: 120px;
+        height: 120px;
+    }
+}
+
+
+.description {
+    border-top: 2px solid #333333;
+    border-bottom: 2px solid #333333;
+    padding-top: 40px;
+    padding-bottom: 40px;
+    margin-top: 35px;
+    margin-bottom: 15px;
 }

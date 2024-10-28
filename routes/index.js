@@ -5,7 +5,11 @@ const authenticationService = require("../services/authentication");
 const gamesController = require("../controllers/gamesController");
 
 router.get('/', authenticationService.verifyToken, (req, res) => {
-    res.render('index', {title: "Welcome", loggedInUser: req.user});
+    let version = req.query.version;
+    if (!version || !(version === "2" || version === "3")) {
+        version = "";
+    }
+    res.render('index', {title: "Welcome", loggedInUser: req.user, styleVersion: version});
 });
 
 router.get('/old', authenticationService.verifyToken, (req, res) => {
