@@ -13,7 +13,7 @@ const getMatchesByPUUID = (puuid, startTime) => {
     return fetch(`https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?startTime=${startTimeInSeconds}&endTime=${endTime}&api_key=${RIOT_API_KEY}`);
 };
 
-const getLeagueDataBySummonerId = (summonerId) => fetch('https://euw1.api.riotgames.com/lol/league/v4/entries/by-summoner/' + encodeURIComponent(summonerId) + '?api_key=' + RIOT_API_KEY);
+const getLeagueDataBySummonerPuuid = (puuid) => fetch('https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/' + encodeURIComponent(puuid) + '?api_key=' + RIOT_API_KEY);
 
 async function getGameIdsFromStartTimeBySummonerData(summonerData, startTime) {
     try {
@@ -76,7 +76,7 @@ function getWinLoseResult(matchDetails, participantPuuid) {
 
 module.exports = {
     getRiotDataByRiotId,
-    getLeagueDataBySummonerId,
+    getLeagueDataBySummonerPuuid,
     getGameIdsFromStartTimeBySummonerData,
     getMatchResults,
     getSummonerDataByPuuid

@@ -21,11 +21,10 @@ router.get('/league/:summonername', (req, res) => {
     riotController.getRiotDataByRiotId(gameName, tagLine).then(res => res.json()).then(riotData => {
         riotController.getSummonerDataByPuuid(riotData.puuid).then(res => res.json()).then(summonerData => {
             riotLogger.info('Request for summoner data by name: ' + req.params.summonername);
-            riotController.getLeagueDataBySummonerId(summonerData.id).then(res => res.json()).then(leagueData => {
+            riotController.getLeagueDataBySummonerPuuid(summonerData.puuid).then(res => res.json()).then(leagueData => {
                 riotLogger.info('Request for league data by summoner id: ' + summonerData.id + ' (' + summonerData.gameName + '#' + summonerData.tagLine + ')');
                 leagueData = leagueData.filter(league => league.queueType === 'RANKED_SOLO_5x5');
                 let body = {};
-                console.log(leagueData);
                 if (leagueData[0] === undefined || leagueData[0] === null) {
                     body = {
                         'name': gameName,
