@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Semantic World Generation | Dejan's Portfolio</title>
+    <link rel="stylesheet" href="/css/gamepagestyles.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <meta name="description" content="Bachelor Thesis — Semantic World Generation: a two-stage pipeline that turns high-level labels into playable 3D worlds using embeddings, noise-based terrain, Trellis mesh synthesis, and Unreal Engine integration.">
+</head>
+<body>
+<header>
+    <div class="header-left">
+        <a href="/" class="no-style"><h1>Dejan Zeljko</h1></a>
+    </div>
+    <div class="header-right">
+        <a href="/aboutme">About Me</a>
+        <a href="/streamer">Login</a>
+    </div>
+</header>
+
+<main>
+    <section class="game-header">
+        <h1>Semantic World Generation</h1>
+        <img src="/games/SemanticWorldGeneration/banner.JPG" alt="Semantic World Generation Banner" class="game-banner">
+    </section>
+
+    <section class="game-overview">
+        <h2>Project Overview</h2>
+        <p>
+            <em>Semantic World Generation</em> is my bachelor thesis project exploring how Large Language Models
+            and embeddings can steer procedural content. A two-stage pipeline <strong>pre-generates</strong> a world in Python
+            from a small set of human-provided <strong>semantic labels</strong> (e.g., “coastal dunes,” “alpine valley,” “marsh”),
+            then <strong>imports</strong> a reproducible package into Unreal Engine for real-time exploration and user studies.
+        </p>
+        <p><strong>Scope & Role:</strong> Solo R&amp;D and implementation. Technologies: Python, Trellis, Unreal Engine C++, GLB/glTF, OpenAI embeddings.</p>
+    </section>
+
+    <section class="gameplay-mechanics">
+        <h2>Pipeline at a Glance</h2>
+        <ul>
+            <li><strong>Semantic Input → Grid:</strong> User types 3 labels; the system expands them into a 3×3 chunk grid with neighbors chosen via embedding similarity.</li>
+            <li><strong>Chunk Profiles:</strong> Each chunk gets numeric terrain parameters (height scale, moisture, roughness), water level, and style cues.</li>
+            <li><strong>Terrain &amp; Props:</strong> Deterministic fBM/OpenSimplex heightmaps and scatter algorithms produce prop placements with seed control.</li>
+            <li><strong>Asset Synthesis:</strong> 2D references → <strong>Trellis</strong> → textured <code>.glb</code> meshes; multiple variants to avoid repetition.</li>
+            <li><strong>World Package:</strong> Manifest + per-chunk JSON, <code>.npy</code> heightmaps, <code>.glb</code> meshes → Unreal loads synchronously and places everything.</li>
+        </ul>
+    </section>
+
+    <section class="skills">
+        <h2>Skills Demonstrated</h2>
+        <table>
+            <tr>
+                <th>Skill</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>Systems Architecture</td>
+                <td>Designed a two-stage, file-based pipeline with reproducible seeds and strict interfaces between Python and Unreal.</td>
+            </tr>
+            <tr>
+                <td>Procedural Generation</td>
+                <td>Implemented fBM/OpenSimplex terrain, parametric chunk profiles, and moisture-aware prop scatter.</td>
+            </tr>
+            <tr>
+                <td>LLM &amp; Embeddings</td>
+                <td>Used curated wordsets + transformer similarity to expand and validate semantic labels for coherent chunk adjacency.</td>
+            </tr>
+            <tr>
+                <td>3D Asset Flow</td>
+                <td>Automated 2D→3D synthesis via Trellis into GLB, with caching and variant selection.</td>
+            </tr>
+            <tr>
+                <td>Unreal Engine C++</td>
+                <td>Procedural mesh build from <code>.npy</code> heightmaps, glTFRuntime ingestion, deterministic prop spawning, and in-game metadata UI.</td>
+            </tr>
+        </table>
+    </section>
+
+    <section class="features">
+        <h2>Core Features</h2>
+        <ul>
+            <li><strong>Label-Driven Worlds:</strong> High-level text labels steer style and structure without hand-authored levels.</li>
+            <li><strong>Deterministic Artifacts:</strong> Seeds and manifests ensure the same inputs produce the same world.</li>
+            <li><strong>Variant-Rich Props:</strong> Multiple mesh variations per placement to reduce visual monotony.</            </li>
+            <li><strong>Water &amp; Biome Logic:</strong> Per-chunk waterlines and biome parameters shape terrain and prop densities.</li>
+            <li><strong>Playable Import:</strong> One-click load builds terrain, places meshes, and attaches inspection widgets.</li>
+        </ul>
+    </section>
+
+    <section class="technical-concepts">
+        <h2>Technical Concepts and Tools</h2>
+        <div class="concepts-list">
+            <h3>Semantic Expansion</h3>
+            <p>
+                Labels are embedded and matched against a curated vocabulary; transformer similarity guides coherent neighbors
+                and filters out semantically distant options.
+            </p>
+            <br>
+            <h3>Chunk Profiles &amp; Terrain</h3>
+            <p>
+                Numeric profiles (e.g., <code>height_scale</code>, <code>roughness</code>, <code>moisture</code>) parameterize noise generators and scatter.
+                Profiles serialize to JSON for auditability and reproducibility.
+            </p>
+            <br>
+            <h3>Trellis Mesh Synthesis</h3>
+            <p>
+                2D reference images turn into textured <code>.glb</code> assets. The importer caches GLBs and assigns variants per placement.
+            </p>
+            <br>
+            <h3>Unreal Integration</h3>
+            <p>
+                ProceduralMeshComponent builds terrain from <code>.npy</code> heightmaps; glTFRuntime loads GLBs; a
+                <code>GeneratedAssetInfoComponent</code> stores metadata for on-screen inspection and user studies.
+            </p>
+        </div>
+    </section>
+
+    <section class="gallery">
+        <h2>Gallery</h2>
+        <img src="/games/SemanticWorldGeneration/screenshot1.JPG" alt="3×3 chunk overview with biome labels" class="gallery-img">
+        <img src="/games/SemanticWorldGeneration/screenshot2.JPG" alt="Heightmap to procedural mesh in Unreal" class="gallery-img">
+        <img src="/games/SemanticWorldGeneration/screenshot3.JPG" alt="Variant props scattered across a coastal chunk" class="gallery-img">
+    </section>
+
+    <section class="learning-takeaways">
+        <h2>Learning Takeaways</h2>
+        <p>
+            Pairing semantics with deterministic generation yields worlds that feel intentional yet remain reproducible.
+            Curated vocabularies and similarity filtering were crucial to avoid incoherent chunk borders, and variant meshes
+            substantially improved perceived richness. The file-based bridge kept Python and Unreal decoupled, making iteration fast.
+        </p>
+    </section>
+
+    <section class="results-eval">
+        <h2>Evaluation &amp; Results</h2>
+        <p>
+            In a small user study, participants reported high <strong>believability</strong> and <strong>immersion</strong>, with slightly lower <strong>coherence</strong> at biome seams.
+            Usability scored strongly, and feedback highlighted the value of visible metadata for understanding generator intent.
+            Future work includes smarter seam blending and adaptive scatter near borders.
+        </p>
+    </section>
+
+    <section class="tools-used">
+        <h2>Tools Used</h2>
+        <ul>
+            <li><strong>Python:</strong> Numpy, OpenSimplex; packaging of manifests, profiles, and heightmaps.</li>
+            <li><strong>Trellis:</strong> 2D → 3D mesh synthesis pipeline.</li>
+            <li><strong>Unreal Engine (C++):</strong> Procedural terrain, metadata overlays, glTFRuntime ingestion.</li>
+            <li><strong>Embeddings / LLMs:</strong> Semantic expansion and validation.</li>
+        </ul>
+    </section>
+
+    <section class="downloads">
+        <h2>Downloads &amp; Links</h2>
+        <ul>
+            <li><a href="/games/SemanticWorldGeneration/thesis.pdf" target="_blank">Thesis PDF</a></li>
+            <li><a href="https://github.com/BlauesBIld/BT_Zeljko_Dejan_LLM_Procedural_World_Generation" target="_blank">Source (GitHub)</a></li>
+            <li><a href="/games/SemanticWorldGeneration/build.zip" target="_blank">Unreal Build (ZIP)</a></li>
+        </ul>
+    </section>
+</main>
+
+<footer>
+    <div class="footer-buttons">
+        <a href="https://www.linkedin.com/in/dejan-zeljko/" target="_blank">
+            <img src="/img/linkedin-icon.png" alt="LinkedIn">
+        </a>
+        <a href="https://github.com/blauesbild" target="_blank">
+            <img src="/img/github-icon.png" alt="GitHub">
+        </a>
+        <a href="mailto:de.zeljko@gmx.at">
+            <img src="/img/email-icon.png" alt="Email">
+        </a>
+    </div>
+</footer>
+
+<script src="/js/script.js"></script>
+</body>
+</html>

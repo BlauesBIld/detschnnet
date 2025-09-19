@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sync Or Sink | Dejan's Portfolio</title>
+    <link rel="stylesheet" href="/css/gamepagestyles.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <meta name="description" content="Sync Or Sink — a 2-player co-op submarine game where a cockpit-bound captain and a roaming engineer must communicate to navigate and repair a failing sub under pressure.">
+</head>
+<body>
+<header>
+    <div class="header-left">
+        <a href="/" class="no-style"><h1>Dejan Zeljko</h1></a>
+    </div>
+    <div class="header-right">
+        <a href="/aboutme">About Me</a>
+        <a href="/streamer">Login</a>
+    </div>
+</header>
+
+<main>
+    <section class="game-header">
+        <h1>Sync Or Sink</h1>
+        <img src="/games/SyncOrSink/banner.jpg" alt="Sync Or Sink Banner" class="game-banner">
+    </section>
+
+    <section class="steam-cta" style="text-align:center; margin: 1.5rem 0 2rem;">
+        <a href="https://store.steampowered.com/app/3626910/Sync_Or_Sink/" target="_blank" rel="noopener"
+           style="display:inline-block; font-size: clamp(1.5rem, 2.5vw + 1rem, 3rem); font-weight: 800; line-height: 1.2; text-decoration: none; padding: .75rem 1.25rem; border: 2px solid currentColor; border-radius: 14px;">
+            ➜ Visit / Wishlist <em>Sync Or Sink</em> on Steam
+        </a>
+        <p style="margin-top:.75rem; opacity:.8;">Built by a 6-person team — I was the <strong>Lead Programmer</strong>.</p>
+    </section>
+
+    <section class="game-overview">
+        <h2>Game Overview</h2>
+        <p>
+            <em>Sync Or Sink</em> is a 2-player co-op Cold War submarine game about communication under pressure.
+            One player is the <strong>Captain</strong>, confined to the cockpit—navigating by instruments, reading alarms,
+            and guiding the mission. The other is the <strong>Engineer</strong>, moving through the submarine to diagnose and
+            repair failures. A walkie-talkie style voice system (with custom high-pass/low-pass filters) forces clear,
+            concise callouts as the Captain relays navigation and faults while the Engineer reports findings and fixes systems
+            before time runs out.
+        </p>
+        <p><strong>Team & Release:</strong> Built by a 6-person team. <strong>Published</strong> (PC). I served as the <strong>Lead Programmer</strong>.</p>
+    </section>
+
+    <section class="gameplay-mechanics">
+        <h2>Gameplay Mechanics</h2>
+        <ul>
+            <li><strong>Asymmetric 2-Player Roles:</strong> Captain (cockpit-locked navigation, instruments, alarms) and Engineer (free movement, inspections, repairs).</li>
+            <li><strong>Stealth &amp; Survival:</strong> Manage speed, depth, and power usage to keep systems stable and avoid catastrophic failures.</li>
+            <li><strong>Fault Detection:</strong> Captain interprets warnings and maps/diagrams; Engineer verifies on-site and reports exact conditions.</li>
+            <li><strong>Repair Loops:</strong> Replace parts, reroute power, seal leaks, and restore subsystems under time pressure.</li>
+            <li><strong>Communication-First Design:</strong> Walkie-talkie push-to-talk with limited bandwidth encourages disciplined comms and clear procedures.</li>
+        </ul>
+    </section>
+
+    <section class="skills">
+        <h2>Skills Demonstrated</h2>
+        <table>
+            <tr>
+                <th>Skill</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>Lead Programming</td>
+                <td>Architected core systems, coordinated feature integration, and guided a 6-person team to a published release.</td>
+            </tr>
+            <tr>
+                <td>Networking (Steamworks)</td>
+                <td>Lobby/session flow and state replication tailored for 2-player asymmetric co-op with integrated voice.</td>
+            </tr>
+            <tr>
+                <td>Audio DSP &amp; UX Comms</td>
+                <td>In-game walkie-talkie chain using custom HP/LP filters and VOX-style gating for clear radio-like comms.</td>
+            </tr>
+            <tr>
+                <td>Systems Design</td>
+                <td>Station/instrument design for Captain; repair/task pipelines for Engineer; failure cascades and time-pressure loops.</td>
+            </tr>
+            <tr>
+                <td>Unity C# Development</td>
+                <td>Modular subsystem components, event-driven faults, deterministic task logic, and robust input/interaction.</td>
+            </tr>
+        </table>
+    </section>
+
+    <section class="features">
+        <h2>Game Features</h2>
+        <ul>
+            <li><strong>Two-Player Co-Op Only:</strong> Captain &amp; Engineer—no weapons, success depends on teamwork and timing.</li>
+            <li><strong>Diegetic Instruments:</strong> Alarms, panels, and gauges deliver information; minimal HUD.</li>
+            <li><strong>Repair &amp; Maintenance:</strong> Leak sealing, rerouting power, part replacement, and emergency procedures.</li>
+            <li><strong>Navigation Under Pressure:</strong> Captain charts safe paths and prioritizes faults while the sub degrades.</li>
+            <li><strong>Filtered VOIP:</strong> Authentic push-to-talk radio feel that shapes player behavior and clarity.</li>
+        </ul>
+    </section>
+
+    <section class="technical-concepts">
+        <h2>Technical Concepts and Tools</h2>
+        <div class="concepts-list">
+            <h3>Two-Player Architecture</h3>
+            <p>Clear authority boundaries: cockpit-bound Captain UI/state and world-space Engineer interactions, synced for reliability.</p>
+            <br>
+            <h3>Steamworks Networking</h3>
+            <p>Stable 2-player sessions with voice; streamlined invites and reconnect handling for short, tense runs.</p>
+            <br>
+            <h3>Audio Processing</h3>
+            <p>Per-channel HP/LP filters, gain staging, and VOX to simulate radio bandwidth and cut through ambient noise.</p>
+        </div>
+    </section>
+
+    <section class="gallery">
+        <h2>Gallery</h2>
+        <img src="/games/SyncOrSink/screenshot1.png" alt="Captain's cockpit instruments" class="gallery-img">
+        <img src="/games/SyncOrSink/screenshot2.png" alt="Lobby User Interface" class="gallery-img">
+        <img src="/games/SyncOrSink/screenshot3.png" alt="Engineer in the electricity room" class="gallery-img">
+    </section>
+
+    <section class="learning-takeaways">
+        <h2>Learning Takeaways</h2>
+        <p>
+            Designing strict role asymmetry taught the value of instrument-driven UI and spatial task design.
+            The filtered VOIP system directly shaped teamwork quality, while fault cascades stress-tested replication,
+            task orchestration, and recovery flows—key lessons for shipping a tight, communication-centric co-op experience.
+        </p>
+    </section>
+
+    <section class="tools-used">
+        <h2>Tools Used</h2>
+        <ul>
+            <li><strong>Unity:</strong> Engine, physics, UI, and scene flow.</li>
+            <li><strong>Steamworks:</strong> Networking, lobbies, and voice transport.</li>
+            <li><strong>C# / JetBrains Rider:</strong> Core gameplay code and tooling.</li>
+            <li><strong>Custom DSP Filters:</strong> High-pass/low-pass chain for radio effect.</li>
+        </ul>
+    </section>
+</main>
+
+<footer>
+    <div class="footer-buttons">
+        <a href="https://www.linkedin.com/in/dejan-zeljko/" target="_blank">
+            <img src="/img/linkedin-icon.png" alt="LinkedIn">
+        </a>
+        <a href="https://github.com/blauesbild" target="_blank">
+            <img src="/img/github-icon.png" alt="GitHub">
+        </a>
+        <a href="mailto:de.zeljko@gmx.at">
+            <img src="/img/email-icon.png" alt="Email">
+        </a>
+    </div>
+</footer>
+
+<script src="/js/script.js"></script>
+</body>
+</html>

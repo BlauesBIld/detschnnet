@@ -1,7 +1,7 @@
-// JavaScript for Filtering Cards
+// JavaScript for Filtering Cards (reflow-friendly)
 const filterButtons = document.querySelectorAll('.filter-button');
-const cards = document.querySelectorAll('.card');
-let selectedFilters = new Set();
+const cardLinks = document.querySelectorAll('.card-container .card-link'); // hide/show these
+const selectedFilters = new Set();
 
 filterButtons.forEach(button => {
     button.addEventListener('click', () => {
@@ -10,9 +10,11 @@ filterButtons.forEach(button => {
         if (selectedFilters.has(filter)) {
             selectedFilters.delete(filter);
             button.classList.remove('active');
+            button.setAttribute('aria-pressed', 'false');
         } else {
             selectedFilters.add(filter);
             button.classList.add('active');
+            button.setAttribute('aria-pressed', 'true');
         }
 
         updateCards();
@@ -20,12 +22,22 @@ filterButtons.forEach(button => {
 });
 
 function updateCards() {
-    cards.forEach(card => {
-        const cardEngine = card.getAttribute('data-engine');
-        if (selectedFilters.size === 0 || selectedFilters.has(cardEngine)) {
-            card.style.display = 'flex';
+    cardLinks.forEach(link => {
+        const card = link.querySelector('.card');
+        const cardEngine = card?.getAttribute('data-engine');
+
+        const shouldShow =
+            selectedFilters.size === 0 || selectedFilters.has(cardEngine);
+
+        if (shouldShow) {
+            link.style.removeProperty('display'); // let CSS/grid decide display
+            // Or: link.hidden = false;
         } else {
-            card.style.display = 'none';
+            link.style.display = 'none';
+            // Or: link.hidden = true;
         }
     });
 }
+
+// Initial render
+updateCards();
