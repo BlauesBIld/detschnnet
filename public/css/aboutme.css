@@ -293,3 +293,43 @@ footer {
     margin-top: 35px;
     margin-bottom: 15px;
 }
+
+.profile-hero {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 36px;
+}
+
+.profile-hero-img {
+    width: 240px;
+    height: 240px;
+    border-radius: 18px;
+    object-fit: cover;
+
+    border: 2px solid rgba(163, 201, 241, 0.75);
+    box-shadow:
+            0 10px 30px rgba(0, 0, 0, 0.55),
+            0 0 0 6px rgba(163, 201, 241, 0.08),
+            0 0 24px rgba(163, 201, 241, 0.18);
+
+    background-color: #1F1F1F;
+    padding: 6px;
+
+    transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.profile-hero-img:hover {
+    transform: translateY(-2px);
+    box-shadow:
+            0 14px 38px rgba(0, 0, 0, 0.6),
+            0 0 0 6px rgba(163, 201, 241, 0.10),
+            0 0 30px rgba(163, 201, 241, 0.22);
+}
+
+@media (max-width: 768px) {
+    .profile-hero-img {
+        width: 240px;
+        height: 240px;
+        border-radius: 16px;
+    }
+}

@@ -1,0 +1,538 @@
+@import url("https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@400;600&display=swap");
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color: #1a1a1a;
+    overflow: hidden;
+}
+
+#background {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(135deg, #ffe2ec, #fff7d6);
+    will-change: background;
+}
+
+.deck {
+    height: 100vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.deck::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.slide {
+    height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 28px;
+}
+
+.content {
+    width: min(980px, 92vw);
+}
+
+h1, h2 {
+    margin: 0 0 12px 0;
+}
+
+p {
+    margin: 10px 0;
+}
+
+.fancy {
+    font-family: "Great Vibes", ui-serif, Georgia, "Times New Roman", Times, serif;
+    letter-spacing: 0.2px;
+}
+
+.fancy.big {
+    font-size: clamp(24px, 9vw, 36px);
+}
+
+.welcome {
+    font-size: clamp(18px, 9vw, 26px);
+}
+
+.lead {
+    font-size: 18px;
+    line-height: 1.55;
+    max-width: 62ch;
+}
+
+.small {
+    font-size: 14px;
+    opacity: 0.8;
+    max-width: 62ch;
+}
+
+.counter {
+    font-size: clamp(18px, 2.2vw, 22px);
+    font-weight: 700;
+    margin-top: 14px;
+    padding: 12px 0;
+}
+
+.bullets {
+    padding-left: 20px;
+    margin: 12px 0 0 0;
+    max-width: 62ch;
+}
+
+.bullets li {
+    margin: 10px 0;
+}
+
+.footer-note {
+    font-size: 14px;
+    opacity: 0.75;
+    margin-top: 18px;
+}
+
+/* ---------- Hero (Slide 1) ---------- */
+.hero-centered {
+    min-height: calc(100vh - 56px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+}
+
+.hero-kicker {
+    font-size: 16px;
+    line-height: 1.55;
+    opacity: 0.92;
+    max-width: 48ch;
+    margin: 0 0 6px 0;
+}
+
+.emph {
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.kicker-part {
+    display: inline-block;
+}
+
+.hero-name {
+    font-weight: 400;
+    font-size: clamp(46px, 9vw, 72px);
+    line-height: 0.95;
+    margin: 0;
+}
+
+.hero-aka {
+    font-family: "Cinzel", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.9px;
+    text-transform: lowercase;
+    opacity: 0.86;
+    margin: 10px 0 6px 0;
+}
+
+.hero-photoWrap {
+    display: grid;
+    place-items: center;
+    margin-top: 6px;
+}
+
+.hero-photo {
+    width: min(300px, 74vw);
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 26px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+}
+
+.hero-swipe {
+    font-size: 14px;
+    opacity: 0.82;
+    margin-top: 12px;
+}
+
+/* ---------- Stagger base (1–15) ---------- */
+.slide .stagger-1,
+.slide .stagger-2,
+.slide .stagger-3,
+.slide .stagger-4,
+.slide .stagger-5,
+.slide .stagger-6,
+.slide .stagger-7,
+.slide .stagger-8,
+.slide .stagger-9,
+.slide .stagger-10,
+.slide .stagger-11,
+.slide .stagger-12,
+.slide .stagger-13,
+.slide .stagger-14,
+.slide .stagger-15,
+.slide .stagger-16 {
+    opacity: 0;
+    transform: translateY(48px);
+    filter: blur(3px);
+    will-change: transform, opacity, filter;
+}
+
+/* Fast words (1–9): short, snappy */
+.slide .stagger-2,
+.slide .stagger-3,
+.slide .stagger-4,
+.slide .stagger-5,
+.slide .stagger-6,
+.slide .stagger-7,
+.slide .stagger-8,
+.slide .stagger-9,
+.slide .stagger-10 {
+    transition: transform 650ms cubic-bezier(.2, .9, .2, 1),
+    opacity 650ms ease,
+    filter 650ms ease;
+}
+
+/* Slow rest (10–15): cinematic */
+.slide .stagger-1,
+.slide .stagger-11,
+.slide .stagger-12,
+.slide .stagger-13,
+.slide .stagger-14,
+.slide .stagger-15,
+.slide .stagger-16 {
+    transition: transform 2200ms cubic-bezier(.16, 1, .3, 1),
+    opacity 2200ms ease,
+    filter 2200ms ease;
+}
+
+.slide.is-visible .stagger-1 {
+    transition-delay: 200ms;
+}
+
+/* Welcome */
+
+.slide.is-visible .stagger-2 {
+    transition-delay: 1720ms;
+}
+
+/* big break after Welcome */
+.slide.is-visible .stagger-3 {
+    transition-delay: 1830ms;
+}
+
+.slide.is-visible .stagger-4 {
+    transition-delay: 1940ms;
+}
+
+.slide.is-visible .stagger-5 {
+    transition-delay: 2050ms;
+}
+
+.slide.is-visible .stagger-6 {
+    transition-delay: 2160ms;
+}
+
+.slide.is-visible .stagger-7 {
+    transition-delay: 2270ms;
+}
+
+.slide.is-visible .stagger-8 {
+    transition-delay: 2380ms;
+}
+
+.slide.is-visible .stagger-9 {
+    transition-delay: 2490ms;
+}
+
+.slide.is-visible .stagger-10 {
+    transition-delay: 2600ms;
+}
+
+/* girlfriend */
+
+.slide.is-visible .stagger-11 {
+    transition-delay: 3000ms;
+}
+
+/* Dariela */
+.slide.is-visible .stagger-12 {
+    transition-delay: 3600ms;
+}
+
+.slide.is-visible .stagger-13 {
+    transition-delay: 4200ms;
+}
+
+.slide.is-visible .stagger-14 {
+    transition-delay: 4800ms;
+}
+
+.slide.is-visible .stagger-15 {
+    transition-delay: 5600ms;
+}
+
+.slide.is-visible .stagger-16 {
+    transition-delay: 7500ms;
+}
+
+/* Swipe */
+
+
+.slide.is-visible .stagger-1,
+.slide.is-visible .stagger-2,
+.slide.is-visible .stagger-3,
+.slide.is-visible .stagger-4,
+.slide.is-visible .stagger-5,
+.slide.is-visible .stagger-6,
+.slide.is-visible .stagger-7,
+.slide.is-visible .stagger-8,
+.slide.is-visible .stagger-9,
+.slide.is-visible .stagger-10,
+.slide.is-visible .stagger-11,
+.slide.is-visible .stagger-12,
+.slide.is-visible .stagger-13,
+.slide.is-visible .stagger-14,
+.slide.is-visible .stagger-15,
+.slide.is-visible .stagger-16 {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+}
+
+
+/* ---------- Hint ---------- */
+.hint {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    opacity: 0.72;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 999px;
+    pointer-events: none;
+    transition: opacity 700ms ease;
+}
+
+.hint.is-hidden {
+    opacity: 0;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 820px) {
+    .hero-photo {
+        width: min(320px, 78vw);
+    }
+}
+
+/* ---------- Reduced Motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .slide [class^="stagger-"],
+    .slide:not(.hero) .content {
+        transition: none;
+        opacity: 1;
+        transform: none;
+        filter: none;
+    }
+}
+
+
+/* ---------- Minimal per-line animations (Slides 2–5) ---------- */
+.anim {
+    opacity: 0;
+    transform: translateY(40px);
+    filter: blur(3px);
+    transition: transform 1800ms cubic-bezier(.16, 1, .3, 1),
+    opacity 1800ms ease,
+    filter 1800ms ease;
+    will-change: transform, opacity, filter;
+}
+
+.slide.is-visible .anim {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+}
+
+/* Stagger delays for simple lines */
+.slide.is-visible .line-1 {
+    transition-delay: 140ms;
+}
+
+.slide.is-visible .line-2 {
+    transition-delay: 420ms;
+}
+
+.slide.is-visible .line-3 {
+    transition-delay: 700ms;
+}
+
+.slide.is-visible .line-4 {
+    transition-delay: 980ms;
+}
+
+.slide.is-visible .line-5 {
+    transition-delay: 1260ms;
+}
+
+.slide.is-visible .line-6 {
+    transition-delay: 1540ms;
+}
+
+.slide.is-visible .line-7 {
+    transition-delay: 1820ms;
+}
+
+.slide.is-visible .line-8 {
+    transition-delay: 2100ms;
+}
+
+.slide.is-visible .line-9 {
+    transition-delay: 2380ms;
+}
+
+
+.center-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+}
+
+/* ---------- Timer ---------- */
+.timer {
+    width: min(520px, 92vw);
+    margin-top: 6px;
+    display: grid;
+    gap: 10px;
+}
+
+.timer-line {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    font-size: clamp(18px, 5.4vw, 26px);
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.timer-num {
+    min-width: 2.6ch;
+    text-align: right;
+}
+
+.timer-label {
+    font-weight: 600;
+    opacity: 0.82;
+    font-size: 0.82em;
+    align-self: flex-end;
+    padding-bottom: 2px;
+}
+
+/* ---------- Facts list ---------- */
+.facts {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0 0;
+    width: min(620px, 92vw);
+    display: grid;
+    gap: 10px;
+}
+
+.facts li {
+    font-size: 18px;
+    line-height: 1.55;
+    opacity: 0.92;
+}
+
+.bigline {
+    font-size: 18px;
+    line-height: 1.65;
+    max-width: 62ch;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
+/* ---------- Auto sliding gallery ---------- */
+.gallery {
+    width: min(880px, 92vw);
+    margin-top: 10px;
+    overflow: hidden;
+    border-radius: 22px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.14);
+}
+
+.gallery-track {
+    display: flex;
+    gap: 14px;
+    padding: 14px;
+    width: max-content;
+    animation: galleryScroll 26s linear infinite;
+}
+
+.gallery img {
+    height: min(54vh, 360px);
+    width: auto;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 18px;
+}
+
+@keyframes galleryScroll {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .anim {
+        transition: none;
+        opacity: 1;
+        transform: none;
+        filter: none;
+    }
+
+    .gallery-track {
+        animation: none;
+    }
+}
+
+/* ---------- Per-page hero-style photo ---------- */
+.page-photoWrap {
+    display: grid;
+    place-items: center;
+    margin: 6px 0 10px 0;
+}
+
+.page-photo {
+    width: min(260px, 72vw);
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 26px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+}
+
+/* Slightly smaller on very small screens */
+@media (max-width: 600px) {
+    .page-photo {
+        width: min(200px, 76vw);
+        border-radius: 22px;
+    }
+}

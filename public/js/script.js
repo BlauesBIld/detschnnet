@@ -41,3 +41,12 @@ function updateCards() {
 
 // Initial render
 updateCards();
+
+function toggleProfileImage(img) {
+    const current = img.src;
+    const alt = img.dataset.altSrc;
+
+    img.src = alt;
+    img.dataset.altSrc = current;
+}
+
