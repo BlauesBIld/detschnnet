@@ -33,6 +33,8 @@ function lookupGeo(ip) {
 }
 
 async function postToDiscord(content) {
+    console.log("Trying to postToDiscord for " + content + " with link " + DISCORD_WEBHOOK_URL);
+
     if (!DISCORD_WEBHOOK_URL) return;
 
     await fetch(DISCORD_WEBHOOK_URL, {
