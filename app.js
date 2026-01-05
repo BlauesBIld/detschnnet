@@ -3,11 +3,19 @@ const app = express();
 const port = 3000;
 const path = require('path');
 const ejs = require('ejs');
-const db = require('./services/database.js');
-const twitchChat = require('./services/twitchChat.js');
+
+const {visitNotifierGeoipLite} = require("./services/visitNotifierGeoipLite");
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
+
+app.set("trust proxy", true);
+
+// Register notifier BEFORE routes
+app.use(visitNotifierGeoipLite({
+    paths: ["/"],
+    cooldownMs: 60_000,
+}));
 
 const methodOverride = require('method-override');
 app.use(methodOverride('_method'));
@@ -18,7 +26,7 @@ app.use(bodyParser.json({
         req.rawBody = buf.toString();
     }
 }));
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({extended: true}));
 
 const cors = require('cors');
 app.use(cors());
@@ -31,9 +39,9 @@ app.use(cookieParser());
 
 const fs = require('fs');
 const morgan = require('morgan');
-const accessLogStream = fs.createWriteStream(path.join(__dirname, './logs/requests.log'), { flags: 'a+' })
-app.use(morgan('combined', { stream: accessLogStream }))
-app.use(morgan('short'))
+const accessLogStream = fs.createWriteStream(path.join(__dirname, './logs/requests.log'), {flags: 'a+'});
+app.use(morgan('combined', {stream: accessLogStream}));
+app.use(morgan('short'));
 
 const indexRouter = require('./routes/index');
 const twitchRouter = require('./routes/twitch');
@@ -42,7 +50,6 @@ const spotifyRouter = require('./routes/spotify');
 const gamesRouter = require('./routes/games');
 const streamerRouter = require('./routes/streamer');
 const openAiRouter = require('./routes/openai');
-const {hash} = require("bcrypt");
 
 app.use('/', indexRouter);
 app.use('/twitch', twitchRouter.router);
@@ -54,19 +61,13 @@ app.use('/atd', openAiRouter);
 
 app.use(express.static(__dirname + '/public'));
 
+// Error handler must be LAST
 function errorHandler(err, req, res, next) {
     res.render('error', {error: err});
 }
+
 app.use(errorHandler);
 
 app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`);
-});
-
-process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    console.log(`Listening at http://localhost:${port}`);
 });
