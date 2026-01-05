@@ -13,7 +13,7 @@ app.set("trust proxy", true);
 
 // Register notifier BEFORE routes
 app.use(visitNotifierGeoipLite({
-    paths: ["/"],
+    paths: ["/", "/aboutme", "/games/SyncOrSink/index.html", "/games/SemanticWorldGeneration/index.html"],
     cooldownMs: 60_000,
 }));
 
