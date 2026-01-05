@@ -1,4 +1,3 @@
-const fetch = require("node-fetch");
 const geoip = require("geoip-lite");
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
