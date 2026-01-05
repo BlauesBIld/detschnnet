@@ -2,6 +2,14 @@ const geoip = require("geoip-lite");
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
+const BLOCKED_COUNTRIES = new Set([
+    "CN", // China
+    "RU", // Russia (optional)
+    "IR", // Iran (optional)
+    "KP", // North Korea (optional)
+]);
+
+
 function getClientIp(req) {
     const cfIp = req.headers["cf-connecting-ip"];
     if (typeof cfIp === "string" && cfIp.length > 0) return cfIp.trim();
@@ -82,6 +90,15 @@ function visitNotifierGeoipLite(options = {}) {
             lastSeen.set(key, now);
 
             const geo = lookupGeo(ip);
+
+            if (!geo) {
+                return next();
+            }
+
+            if (BLOCKED_COUNTRIES.has(geo.country)) {
+                console.log(`Blocked visit from ${geo.country} (${ip})`);
+                return next();
+            }
 
             console.log("geo: ", geo);
             const lines = [
