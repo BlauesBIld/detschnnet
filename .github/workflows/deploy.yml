@@ -20,4 +20,4 @@ jobs:
 
     - name: Deploy to server
       run: |
-        ssh -o StrictHostKeyChecking=no detschn@detschn.net 'bash ~/deploy-script.sh'
+        ssh -o StrictHostKeyChecking=no detschn@detschn.net 'bash ~/website/deploy-script.sh'
