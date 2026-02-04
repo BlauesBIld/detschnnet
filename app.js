@@ -4,7 +4,7 @@ const port = 13061;
 const path = require('path');
 const ejs = require('ejs');
 
-const {visitNotifierGeoipLite} = require("./services/visitNotifierGeoipLite");
+//const {visitNotifierGeoipLite} = require("./services/visitNotifierGeoipLite");
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -12,10 +12,10 @@ app.set('view engine', 'ejs');
 app.set("trust proxy", true);
 
 // Register notifier BEFORE routes
-app.use(visitNotifierGeoipLite({
+/*app.use(visitNotifierGeoipLite({
     paths: ["/", "/aboutme", "/games/SyncOrSink/index.html", "/games/SemanticWorldGeneration/index.html"],
     cooldownMs: 60_000,
-}));
+}));*/
 
 const methodOverride = require('method-override');
 app.use(methodOverride('_method'));
@@ -63,7 +63,17 @@ app.use(express.static(__dirname + '/public'));
 
 // Error handler must be LAST
 function errorHandler(err, req, res, next) {
-    res.render('error', {error: err});
+    console.error(err);
+
+    if (res.headersSent) {
+        return next(err);
+    }
+
+    res.status(500).render('error', {
+        error: process.env.NODE_ENV === 'production'
+            ? {message: 'Something went wrong'}
+            : err
+    });
 }
 
 app.use(errorHandler);
