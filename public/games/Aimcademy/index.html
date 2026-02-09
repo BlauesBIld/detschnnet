@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aimcademy | Dejan's Portfolio</title>
+    <link rel="stylesheet" href="/css/gamepagestyles.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <meta name="description"
+          content="Aimcademy — a Unity aim trainer with a modern practice flow and an ASP.NET Core backend for leaderboards, profiles, and score tracking.">
+</head>
+<body>
+<header>
+    <div class="header-left">
+        <a href="/" class="no-style"><h1>Dejan Zeljko</h1></a>
+    </div>
+    <div class="header-right">
+        <a href="/aboutme">About Me</a>
+        <a href="/streamer">Login</a>
+    </div>
+</header>
+
+<main>
+    <section class="game-header">
+        <h1>Aimcademy</h1>
+        <img src="/games/Aimcademy/banner.JPG" alt="Aimcademy Banner" class="game-banner">
+    </section>
+
+    <section class="steam-cta" style="text-align:center; margin: 1.5rem 0 2rem;">
+        <a href="https://aimcademy.gg/" target="_blank" rel="noopener"
+           style="display:inline-block; font-size: clamp(1.5rem, 2.5vw + 1rem, 3rem); font-weight: 800; line-height: 1.2; text-decoration: none; padding: .75rem 1.25rem; border: 2px solid currentColor; border-radius: 14px;">
+            ➜ <em>Aimcademy</em> Website <em>with</em> Steam Link
+        </a>
+    </section>
+
+    <section class="game-overview">
+        <h2>Project Overview</h2>
+        <p>
+            <em>Aimcademy</em> is an aim trainer built in <strong>Unity</strong> with a focus on repeatable practice,
+            clean UX, and fast iteration. Players run short drills, track performance over time, and compare results on
+            leaderboards. The project pairs a responsive in-game UI with an <strong>ASP.NET Core</strong> backend that
+            manages scores, user identity, and ranking logic.
+        </p>
+
+        <p>I contributed to this project alongside my full-time role, focusing primarily on <strong>backend</strong>
+            systems and supporting <strong>UI implementation</strong> in Unity.</p>
+    </section>
+
+    <section class="gameplay-mechanics">
+        <h2>Core Mechanics</h2>
+        <ul>
+            <li><strong>Timed Drills:</strong> Short, repeatable scenarios focused on reaction, precision, and
+                consistency.
+            </li>
+            <li><strong>Scoring &amp; Accuracy:</strong> Runs track hits, misses, time-to-hit, and aggregate performance
+                metrics.
+            </li>
+            <li><strong>Progress Tracking:</strong> View improvements over sessions and compare personal bests.</li>
+            <li><strong>Leaderboards:</strong> Global rankings per drill with stable sorting and tie-breaking rules.
+            </li>
+            <li><strong>Fast UX Loop:</strong> Minimal friction from “start” to “restart” for high-volume practice.</li>
+        </ul>
+    </section>
+
+    <section class="skills">
+        <h2>Skills Demonstrated</h2>
+        <table>
+            <tr>
+                <th>Skill</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>ASP.NET Core Backend</td>
+                <td>Designed and implemented APIs for score submission, leaderboard queries, and user-facing
+                    endpoints.
+                </td>
+            </tr>
+            <tr>
+                <td>SQL &amp; Data Modeling</td>
+                <td>Structured persistence for runs/scores with query patterns optimized for ranking and recent-history
+                    views.
+                </td>
+            </tr>
+            <tr>
+                <td>Leaderboard Logic</td>
+                <td>Deterministic ranking, tie-breaking, validation, and safe server-side score handling.</td>
+            </tr>
+            <tr>
+                <td>Unity UI Implementation</td>
+                <td>Implemented and iterated on UI screens and flows to keep practice sessions fast and readable.</td>
+            </tr>
+            <tr>
+                <td>Reliability &amp; Debugging</td>
+                <td>Hardening API behavior, handling edge cases, and debugging client/server mismatches and payload
+                    issues.
+                </td>
+            </tr>
+        </table>
+    </section>
+
+    <section class="features">
+        <h2>Key Features</h2>
+        <ul>
+            <li><strong>Server-Backed Leaderboards:</strong> Rankings stored and computed server-side for consistency.
+            </li>
+            <li><strong>Score Validation:</strong> Guardrails against malformed submissions and obvious invalid data.
+            </li>
+            <li><strong>Drill Catalog:</strong> Multiple training scenarios with per-mode rankings and stats.</li>
+            <li><strong>Session History:</strong> Recent runs and personal best tracking for quick feedback loops.</li>
+            <li><strong>UI-first Iteration:</strong> Quick screens, clear results, and snappy restart flow.</li>
+        </ul>
+    </section>
+
+    <section class="technical-concepts">
+        <h2>Technical Concepts and Tools</h2>
+        <div class="concepts-list">
+            <h3>ASP.NET Core Services</h3>
+            <p>REST endpoints for submitting results, fetching leaderboards, and retrieving player performance
+                history.</p>
+            <br>
+            <h3>Data &amp; Ranking Queries</h3>
+            <p>Efficient queries for top-N leaderboards, per-drill filtering, sorting, and consistent tie-breaking.</p>
+            <br>
+            <h3>Unity UI Flow</h3>
+            <p>Clean practice loop: drill selection, run start, results screen, and quick retry with minimal
+                downtime.</p>
+        </div>
+    </section>
+
+    <section class="gallery">
+        <h2>Gallery</h2>
+        <img src="/games/Aimcademy/screenshot1.JPG" alt="Aimcademy main menu screenshot" class="gallery-img">
+        <img src="/games/Aimcademy/screenshot2.JPG" alt="Aimcademy in-run gameplay" class="gallery-img">
+        <img src="/games/Aimcademy/screenshot3.JPG" alt="Aimcademy results and leaderboard screen" class="gallery-img">
+    </section>
+
+    <section class="learning-takeaways">
+        <h2>Learning Takeaways</h2>
+        <p>
+            Building score services for an aim trainer sharpened the importance of deterministic ranking logic,
+            robust validation, and low-latency queries. On the Unity side, UI work reinforced how much a fast
+            “practice → results → retry” loop impacts player engagement—especially in high-repetition training tools.
+        </p>
+    </section>
+
+    <section class="tools-used">
+        <h2>Tools Used</h2>
+        <ul>
+            <li><strong>Unity:</strong> Gameplay loop, UI, and scene flow.</li>
+            <li><strong>C# / JetBrains Rider:</strong> Client-side features and iteration support.</li>
+            <li><strong>ASP.NET Core:</strong> Backend APIs for scoreboards, history, and leaderboard queries.</li>
+            <li><strong>SQL:</strong> Persistence layer and ranking query patterns.</li>
+        </ul>
+    </section>
+</main>
+
+<footer>
+    <div class="footer-buttons">
+        <a href="https://www.linkedin.com/in/dejan-zeljko/" target="_blank">
+            <img src="/img/linkedin-icon.png" alt="LinkedIn">
+        </a>
+        <a href="https://github.com/blauesbild" target="_blank">
+            <img src="/img/github-icon.png" alt="GitHub">
+        </a>
+        <a href="mailto:de.zeljko@gmx.at">
+            <img src="/img/email-icon.png" alt="Email">
+        </a>
+    </div>
+</footer>
+
+<script src="/js/script.js"></script>
+</body>
+</html>

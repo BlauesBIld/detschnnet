@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Osiris | Dejan's Portfolio</title>
+    <link rel="stylesheet" href="/css/gamepagestyles.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <meta name="description"
+          content="Osiris — a voxel-based MMO prototype focused on backend orchestration, persistence, and scalable multiplayer architecture.">
+</head>
+<body>
+<header>
+    <div class="header-left">
+        <a href="/" class="no-style"><h1>Dejan Zeljko</h1></a>
+    </div>
+    <div class="header-right">
+        <a href="/aboutme">About Me</a>
+        <a href="/streamer">Login</a>
+    </div>
+</header>
+
+<main>
+    <section class="game-header">
+        <h1>Osiris</h1>
+        <img src="/games/Osiris/banner.JPG" alt="Osiris Banner" class="game-banner">
+    </section>
+
+    <section class="game-overview">
+        <h2>Project Overview</h2>
+        <p>
+            Project <em>Osiris</em> is a <strong>voxel-based MMO prototype</strong> built with a strong focus on backend
+            architecture rather than content scale. The project explores how large multiplayer worlds can be
+            orchestrated, persisted, and scaled across multiple server processes while remaining responsive and
+            authoritative.
+        </p>
+
+        <p>
+            The prototype combines <strong>Unreal Engine</strong> dedicated servers with a custom
+            <strong>.NET backend</strong> responsible for authentication, world routing, persistence, and server
+            lifecycle management.
+        </p>
+    </section>
+
+    <section class="gameplay-mechanics">
+        <h2>Core Systems</h2>
+        <ul>
+            <li><strong>Server-Authoritative Multiplayer:</strong> Movement, combat, and state changes are resolved
+                server-side.
+            </li>
+            <li><strong>World Routing:</strong> Players are placed into shards or instances via backend-controlled
+                routing logic.
+            </li>
+            <li><strong>Persistence:</strong> Account-level data and progression are stored independently of any
+                single game server.
+            </li>
+            <li><strong>Session-Based Worlds:</strong> Characters enter and leave worlds while backend services
+                coordinate placement and recovery.
+            </li>
+            <li><strong>Permadeath-Oriented Design:</strong> Character state is disposable, while account progression
+                persists.
+            </li>
+        </ul>
+    </section>
+
+    <section class="skills">
+        <h2>Skills Demonstrated</h2>
+        <table>
+            <tr>
+                <th>Skill</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>Backend Architecture</td>
+                <td>Designed service boundaries for authentication, world routing, persistence, and orchestration.</td>
+            </tr>
+            <tr>
+                <td>Server Orchestration</td>
+                <td>Managing lifecycle, health, and scaling of Unreal dedicated server processes.</td>
+            </tr>
+            <tr>
+                <td>Multiplayer Networking</td>
+                <td>Authoritative server model with controlled replication and validation.</td>
+            </tr>
+            <tr>
+                <td>Persistence Design</td>
+                <td>Separating long-term account data from ephemeral character and session state.</td>
+            </tr>
+            <tr>
+                <td>Failure Handling</td>
+                <td>Handling disconnects, crashes, and recovery without corrupting player state.</td>
+            </tr>
+        </table>
+    </section>
+
+    <section class="features">
+        <h2>Key Features</h2>
+        <ul>
+            <li><strong>Backend-Driven Login Flow:</strong> Authentication and session tickets issued outside the game
+                server.
+            </li>
+            <li><strong>World Placement Logic:</strong> Backend decides where players spawn and reconnect.</li>
+            <li><strong>Server Health Tracking:</strong> Dedicated servers report status and heartbeats.</li>
+            <li><strong>Scalable Topology:</strong> Architecture designed to support many concurrent shards.</li>
+            <li><strong>Clear Authority Model:</strong> Clients never own critical state.</li>
+        </ul>
+    </section>
+
+    <section class="technical-concepts">
+        <h2>Technical Concepts and Tools</h2>
+        <div class="concepts-list">
+            <h3>Backend Services (.NET)</h3>
+            <p>Authentication, world routing, persistence, and orchestration APIs built to support MMO-scale flows.</p>
+            <br>
+            <h3>Unreal Dedicated Servers</h3>
+            <p>Server-authoritative simulation with controlled replication and interest management.</p>
+            <br>
+            <h3>Persistence &amp; Recovery</h3>
+            <p>Designing systems that survive crashes, disconnects, and player churn without data loss.</p>
+        </div>
+    </section>
+
+    <!--section class="gallery">
+        <h2>Gallery</h2>
+        <img src="/games/Osiris/screenshot1.png" alt="Osiris world overview" class="gallery-img">
+        <img src="/games/Osiris/screenshot2.png" alt="Osiris voxel terrain prototype" class="gallery-img">
+        <img src="/games/Osiris/screenshot3.png" alt="Osiris server-side simulation" class="gallery-img">
+    </section-->
+
+    <section class="learning-takeaways">
+        <h2>Learning Takeaways</h2>
+        <p>
+            Working on Osiris reinforced how quickly complexity grows in multiplayer systems. The project highlighted
+            the importance of strict authority boundaries, deterministic backend decisions, and defensive handling of
+            failure cases. It also deepened my understanding of how Unreal Engine servers and external backend services
+            can cooperate at scale.
+        </p>
+    </section>
+
+    <section class="tools-used">
+        <h2>Tools Used</h2>
+        <ul>
+            <li><strong>Unreal Engine:</strong> Dedicated server simulation and client integration.</li>
+            <li><strong>C++:</strong> Server-side gameplay and replication logic.</li>
+            <li><strong>.NET / C#:</strong> Backend services for auth, routing, persistence, and orchestration.</li>
+            <li><strong>SQL / Redis:</strong> Persistent storage and transient coordination data.</li>
+        </ul>
+    </section>
+</main>
+
+<footer>
+    <div class="footer-buttons">
+        <a href="https://www.linkedin.com/in/dejan-zeljko/" target="_blank">
+            <img src="/img/linkedin-icon.png" alt="LinkedIn">
+        </a>
+        <a href="https://github.com/blauesbild" target="_blank">
+            <img src="/img/github-icon.png" alt="GitHub">
+        </a>
+        <a href="mailto:de.zeljko@gmx.at">
+            <img src="/img/email-icon.png" alt="Email">
+        </a>
+    </div>
+</footer>
+
+<script src="/js/script.js"></script>
+</body>
+</html>
