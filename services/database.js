@@ -1,5 +1,5 @@
 require('dotenv').config(); // allows us to use .env file
-const { Pool } = require('pg');
+const {Pool} = require('pg');
 const fs = require('fs');
 
 const config = new Pool({
@@ -10,7 +10,11 @@ const config = new Pool({
     database: process.env.DB_NAME
 });
 
-config.connect(function(err) {
+config.on('error', (err) => {
+    console.error('Postgres pool error (connection dropped):', err);
+});
+
+config.connect(function (err) {
     if (err && process.env.ENV === "prod") throw err;
     console.log("Database connected!");
 });
