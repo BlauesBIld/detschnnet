@@ -24,8 +24,6 @@ async function getTodayTrainingSession(userId) {
 async function getOrCreateTodayTrainingSession(userId) {
     const existingSession = await workoutModel.getTodayTrainingSession(userId);
 
-    console.log(existingSession);
-
     if (existingSession) {
         return existingSession.id;
     }
@@ -86,8 +84,6 @@ async function getCurrentWeekOverview() {
             name: row.user_name,
             rounds: row.rounds
         });
-
-        console.log(groupedByDay.get(dayKey));
     }
 
     return Array.from(groupedByDay.values());
