@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select User</title>
+    <link rel="stylesheet" href="/css/workout.css">
+</head>
+<body>
+<div class="page">
+    <div class="header">
+        <div>
+            <h1 class="title">Select User</h1>
+            <p class="subtitle">Choose who is starting the current training session.</p>
+        </div>
+    </div>
+
+    <div class="card card-narrow">
+        <h2 class="section-title">Training Setup</h2>
+        <p class="section-text-spaced">Pick a user to begin the workout session.</p>
+
+        <div class="user-button-grid">
+            <% users.forEach(user => { %>
+                <form method="POST" action="/workout/select-user" class="user-button-form">
+                    <input type="hidden" name="userId" value="<%= user.id %>">
+                    <button type="submit" class="button user-button">
+                        <%= user.name %>
+                    </button>
+                </form>
+            <% }) %>
+        </div>
+
+        <div class="footer-actions">
+            <a href="/workout" class="button button-secondary">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

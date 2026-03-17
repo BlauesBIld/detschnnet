@@ -1,8 +1,10 @@
 const express = require('express');
+const session = require('express-session');
 const app = express();
 const port = 13061;
 const path = require('path');
 const ejs = require('ejs');
+require('dotenv').config();
 
 //const {visitNotifierGeoipLite} = require("./services/visitNotifierGeoipLite");
 
@@ -43,6 +45,18 @@ const accessLogStream = fs.createWriteStream(path.join(__dirname, './logs/reques
 app.use(morgan('combined', {stream: accessLogStream}));
 app.use(morgan('short'));
 
+const sessionSecret = process.env.SESSION_SECRET || 'dev-secret';
+
+app.use(session({
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        sameSite: 'lax'
+    }
+}));
+
 const indexRouter = require('./routes/index');
 const twitchRouter = require('./routes/twitch');
 const riotRouter = require('./routes/riot');
@@ -50,7 +64,7 @@ const spotifyRouter = require('./routes/spotify');
 const gamesRouter = require('./routes/games');
 const streamerRouter = require('./routes/streamer');
 const openAiRouter = require('./routes/openai');
-
+const workoutRouter = require('./routes/workout');
 app.use('/', indexRouter);
 app.use('/twitch', twitchRouter.router);
 app.use('/riot', riotRouter);
@@ -58,6 +72,7 @@ app.use('/spotify', spotifyRouter);
 app.use('/games', gamesRouter);
 app.use('/streamer', streamerRouter);
 app.use('/atd', openAiRouter);
+app.use('/workout', workoutRouter);
 
 app.use(express.static(__dirname + '/public'));
 
@@ -79,5 +94,5 @@ function errorHandler(err, req, res, next) {
 app.use(errorHandler);
 
 app.listen(port, () => {
-    console.log(`Listening at http://localhost:${port}`);
+    console.log(`Listening at http://localhost:${port}/workout`);
 });

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/models/workoutModel.js" value="dc078110-1541-4a0f-9b42-ce4e55ef175f" />
+    <file url="file://$PROJECT_DIR$/services/workout.js" value="dc078110-1541-4a0f-9b42-ce4e55ef175f" />
+  </component>
+</project>

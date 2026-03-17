@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training</title>
+    <link rel="stylesheet" href="/css/workout.css">
+</head>
+<body>
+<div class="page">
+    <div class="header">
+        <div>
+            <h1 class="title">Training</h1>
+            <p class="subtitle">Track completed rounds for the current session.</p>
+        </div>
+    </div>
+
+    <div class="top-grid">
+        <div class="card">
+            <h2 class="section-title">Session Progress</h2>
+            <p class="section-text">Your current session updates automatically as you finish rounds.</p>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-label">Completed Rounds</div>
+                    <div class="stat-value">
+                        <% if (todayWorkout.rounds > 0) { %>
+                            <%= roundCount %>/<%= todayWorkout.rounds %>
+                        <% } else { %>
+                            Rest
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Status</div>
+                    <div style="margin-top: 4px;">
+                        <div style="margin-top: 4px;">
+                            <% if (sessionProgressState === 'full') { %>
+                                <span class="badge badge-full">FULL</span>
+                            <% } else if (sessionProgressState === 'partial') { %>
+                                <span class="badge badge-partial">PARTIAL</span>
+                            <% } else if (sessionProgressState === 'rest') { %>
+                                <span class="badge badge-rest">REST</span>
+                            <% } else { %>
+                                <span class="badge badge-incomplete">IN PROGRESS</span>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card action-card">
+            <div>
+                <h2 class="section-title">Complete Round</h2>
+                <p class="section-text">Press this after finishing one full round of your workout.</p>
+            </div>
+
+            <div style="margin-top: 24px;">
+                <form method="POST" action="/workout/done-round">
+                    <button type="submit" class="button button-success button-large">
+                        Done Round
+                    </button>
+                </form>
+
+                <div class="footer-actions">
+                    <a href="/workout" class="button button-secondary">
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 24px;">
+        <h2 class="section-title"><%= todayWorkout.dayLabel %> — <%= todayWorkout.title %></h2>
+
+        <p class="section-text">
+            Difficulty: <strong><%= todayWorkout.difficulty %></strong>
+            <% if (todayWorkout.workoutTime) { %>
+                · Time: <strong><%= todayWorkout.workoutTime %></strong>
+            <% } %>
+            <% if (todayWorkout.rounds > 0) { %>
+                · Rounds: <strong><%= todayWorkout.rounds %></strong>
+            <% } %>
+            <% if (todayWorkout.restSeconds) { %>
+                · Rest: <strong><%= todayWorkout.restSeconds %> sec</strong>
+            <% } %>
+        </p>
+
+        <% if (todayWorkout.exercises.length === 0) { %>
+            <p class="section-text">Today is a rest day.</p>
+        <% } else { %>
+            <div class="exercise-list">
+                <% todayWorkout.exercises.forEach(exercise => { %>
+                    <div class="exercise-row">
+                        <span class="exercise-name"><%= exercise.name %></span>
+                        <span class="exercise-value"><%= exercise.displayValue %></span>
+                    </div>
+                <% }) %>
+            </div>
+        <% } %>
+    </div>
+</div>
+</body>
+</html>

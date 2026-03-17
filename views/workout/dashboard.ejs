@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Dashboard</title>
+    <link rel="stylesheet" href="/css/workout.css">
+</head>
+<body>
+<div class="page">
+    <div class="header">
+        <div>
+            <h1 class="title">Workout Dashboard</h1>
+            <p class="subtitle">Let's lose fat.</p>
+        </div>
+    </div>
+
+    <div class="top-grid">
+        <div class="card">
+            <h2 class="section-title">Today’s Progress</h2>
+            <p class="section-text">Your daily status is derived automatically from completed rounds.</p>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-label">Today's Rounds</div>
+                    <div class="stat-value">
+                        <% if (todayTargetRounds > 0) { %>
+                            <%= todayRounds %>/<%= todayTargetRounds %>
+                        <% } else { %>
+                            Rest
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Status</div>
+                    <div style="margin-top: 4px;">
+                        <% if (todayProgressState === 'full') { %>
+                            <span class="badge badge-full">FULL</span>
+                        <% } else if (todayProgressState === 'partial') { %>
+                            <span class="badge badge-partial">PARTIAL</span>
+                        <% } else if (todayProgressState === 'rest') { %>
+                            <span class="badge badge-rest">REST</span>
+                        <% } else { %>
+                            <span class="badge badge-incomplete">INCOMPLETE</span>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px;">
+                <a href="/workout/train" class="button button-success button-large">
+                    Start Training
+                </a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">User</h2>
+            <p class="section-text">Currently selected user and quick switching.</p>
+
+            <div class="selected-user-box">
+                <% const selectedUser = users.find(user => user.id === selectedUserId); %>
+
+                <div class="selected-user-label">Currently selected</div>
+                <div class="selected-user-name">
+                    <%= selectedUser ? selectedUser.name : 'No user selected' %>
+                </div>
+            </div>
+
+            <form method="POST" action="/workout/select-user" id="userSwitchForm" class="user-switch-form">
+                <label for="userId" class="dropdown-label">Switch user</label>
+                <select name="userId" id="userId" class="user-select" onchange="this.form.submit()">
+                    <% users.forEach(user => { %>
+                        <option value="<%= user.id %>" <%= user.id === selectedUserId ? 'selected' : '' %>>
+                            <%= user.name %>
+                        </option>
+                    <% }) %>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <div class="card weekly-card">
+        <div class="weekly-header">
+            <div>
+                <h2 class="section-title">Current Week Overview</h2>
+                <p class="section-text">Every day shows all users and their completed rounds.</p>
+            </div>
+            <div class="weekly-pill">Weekly Activity</div>
+        </div>
+
+        <div class="week-grid">
+            <%
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+            function getViennaDateParts(offsetDays = 0) {
+                const now = new Date();
+                const viennaNow = new Date(now.toLocaleString('en-US', {timeZone: 'Europe/Vienna'}));
+                viennaNow.setDate(viennaNow.getDate() + offsetDays);
+
+                const year = viennaNow.getFullYear();
+                const month = String(viennaNow.getMonth() + 1).padStart(2, '0');
+                const day = String(viennaNow.getDate()).padStart(2, '0');
+
+                return {
+                    key: `${year}-${month}-${day}`,
+                    date: viennaNow
+                };
+            }
+
+            function parseDateOnly(dateString) {
+                const [year, month, day] = dateString.split('-').map(Number);
+                return new Date(year, month - 1, day);
+            }
+
+            const todayInfo = getViennaDateParts(0);
+            const tomorrowInfo = getViennaDateParts(1);
+            %>
+
+            <% weeklyOverview.forEach(day => {
+                const dayDate = parseDateOnly(day.date);
+                const isToday = day.date === todayInfo.key;
+                const isTomorrow = day.date === tomorrowInfo.key;
+
+                let displayLabel = dayNames[dayDate.getDay()];
+                if (isToday) {
+                    displayLabel = 'Today';
+                } else if (isTomorrow) {
+                    displayLabel = 'Tomorrow';
+                }
+            %>
+            <div class="day-column <%= isToday ? 'today' : '' %>">
+                <div class="day-name"><%= displayLabel %></div>
+                <div class="day-date">
+                    <%= dayDate.toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit'}) %>
+                </div>
+
+                <div class="day-users">
+                    <% day.users.forEach(user => { %>
+                        <div class="day-user-row <%= user.id === selectedUserId ? 'active-user' : '' %> progress-<%= user.progressState %>">
+                            <div class="day-user-name"><%= user.name %></div>
+
+                            <% if (user.isRestDay) { %>
+                                <div class="round-badge">Rest</div>
+                            <% } else { %>
+                                <div class="round-badge"><%= user.rounds %>/<%= user.targetRounds %></div>
+                            <% } %>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+            <% }) %>
+        </div>
+    </div>
+</div>
+</body>
+</html>
