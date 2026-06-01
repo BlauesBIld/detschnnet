@@ -215,14 +215,31 @@ main {
 /* Project Icons */
 .projects-section li {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    gap: 10px;
     margin-bottom: 15px;
+    line-height: 1.45;
 }
 
 .project-icon {
+    flex: 0 0 auto;
     width: 20px;
     height: 20px;
-    margin-right: 10px;
+    margin-top: 2px;
+}
+
+.project-copy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.project-copy strong {
+    color: #f0f0f0;
+}
+
+.project-copy span {
+    color: #CCCCCC;
 }
 
 /* Gallery Images */
