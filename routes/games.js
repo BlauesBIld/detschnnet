@@ -15,12 +15,16 @@ router.get('/create', authenticationService.authenticateAdmin, (req, res) => {
 });
 router.post('/create', authenticationService.authenticateAdmin, gamesController.createGame);
 
-router.get('/:gameUuid/edit', authenticationService.authenticateAdmin, (req, res) => {
+router.get('/:gameUuid/edit', authenticationService.authenticateAdmin, (req, res, next) => {
     gamesController.getGameByUuid(req.params.gameUuid).then((game) => {
+        if (!game) {
+            return res.status(404).send('Game not found');
+        }
+
         let imageNames = getImageNamesFromGame(game);
         console.log(imageNames);
         res.render('editGame', {title: game.title, game, loggedInUser: req.user, imageNames: imageNames});
-    });
+    }).catch(next);
 });
 router.post('/:gameUuid/edit', authenticationService.authenticateAdmin, gamesController.updateGame);
 
@@ -49,8 +53,12 @@ function getImageNamesFromGame(game) {
     return imageNames;
 }
 
-router.get('/:gameUuid', authenticationService.verifyToken, (req, res) => {
+router.get('/:gameUuid', authenticationService.verifyToken, (req, res, next) => {
     gamesController.getGameByUuid(req.params.gameUuid).then((game) => {
+        if (!game) {
+            return res.status(404).send('Game not found');
+        }
+
         game.descriptionHtml = marked.marked(game.description);
 
         let imageNames = getImageNamesFromGame(game);
@@ -62,7 +70,7 @@ router.get('/:gameUuid', authenticationService.verifyToken, (req, res) => {
             loggedInUser: req.user,
             imageNames: imageNames
         });
-    });
+    }).catch(next);
 });
 
 module.exports = router;
