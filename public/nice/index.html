@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Mouse Jitter Grid</title>
+    <style>
+        :root {
+            --black-square: #050505;
+            --white-square: #f7f7f2;
+            --text: rgba(255, 255, 255, 0.78);
+            --muted: rgba(255, 255, 255, 0.46);
+            --tile-size: 26px;
+            --grid-x: 0px;
+            --grid-y: 0px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: var(--black-square);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+
+        body {
+            position: fixed;
+            inset: 0;
+        }
+
+        .jitter-grid {
+            position: fixed;
+            inset: -80px;
+            background-image: conic-gradient(
+                var(--white-square) 25%,
+                var(--black-square) 0 50%,
+                var(--white-square) 0 75%,
+                var(--black-square) 0
+            );
+            background-size: calc(var(--tile-size) * 2) calc(var(--tile-size) * 2);
+            background-position: var(--grid-x) var(--grid-y);
+            transform: translateZ(0);
+            will-change: background-position;
+        }
+
+        .status {
+            position: fixed;
+            left: max(14px, env(safe-area-inset-left));
+            bottom: max(14px, env(safe-area-inset-bottom));
+            z-index: 1;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.42);
+            backdrop-filter: blur(8px);
+            font-size: 12px;
+            line-height: 1;
+        }
+
+        .status::before {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #47e082;
+            box-shadow: 0 0 12px #47e082;
+            content: "";
+        }
+
+        .speed {
+            color: var(--muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        @media (max-width: 520px) {
+            :root {
+                --tile-size: 22px;
+            }
+
+            .status {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="jitter-grid" aria-label="Moving mouse jitter grid"></main>
+    <div class="status" aria-live="polite">
+        <span>Jitter active</span>
+        <span class="speed" id="speedLabel">0 px/s</span>
+    </div>
+
+    <script>
+        (() => {
+            const root = document.documentElement;
+            const speedLabel = document.getElementById("speedLabel");
+
+            let x = 0;
+            let y = 0;
+            let velocityX = 0;
+            let velocityY = 0;
+            let targetVelocityX = 0;
+            let targetVelocityY = 0;
+            let lastFrame = performance.now();
+            let nextCurveTimer = 0;
+            let nextStateTimer = 0;
+            let isPaused = false;
+            const randomBetween = (min, max) => min + Math.random() * (max - min);
+
+            let waveA = randomBetween(0.4, 1.2);
+            let waveB = randomBetween(0.4, 1.2);
+            let phaseA = randomBetween(0, Math.PI * 2);
+            let phaseB = randomBetween(0, Math.PI * 2);
+
+            function chooseNewCurve() {
+                if (isPaused) {
+                    return;
+                }
+
+                const angle = randomBetween(0, Math.PI * 2);
+                const speed = randomBetween(22, 95);
+
+                targetVelocityX = Math.cos(angle) * speed;
+                targetVelocityY = Math.sin(angle) * speed;
+                speedLabel.textContent = `${Math.round(speed)} px/s`;
+
+                waveA = randomBetween(0.25, 0.9);
+                waveB = randomBetween(0.18, 0.75);
+                phaseA = randomBetween(0, Math.PI * 2);
+                phaseB = randomBetween(0, Math.PI * 2);
+
+                window.clearTimeout(nextCurveTimer);
+                nextCurveTimer = window.setTimeout(chooseNewCurve, randomBetween(6000, 18000));
+            }
+
+            function pauseMotion() {
+                isPaused = true;
+                targetVelocityX = 0;
+                targetVelocityY = 0;
+                speedLabel.textContent = "paused";
+
+                window.clearTimeout(nextCurveTimer);
+                window.clearTimeout(nextStateTimer);
+                nextStateTimer = window.setTimeout(resumeMotion, randomBetween(18000, 55000));
+            }
+
+            function resumeMotion() {
+                isPaused = false;
+                chooseNewCurve();
+
+                window.clearTimeout(nextStateTimer);
+                nextStateTimer = window.setTimeout(pauseMotion, randomBetween(90000, 210000));
+            }
+
+            const tick = (now) => {
+                const delta = Math.min((now - lastFrame) / 1000, 0.05);
+                lastFrame = now;
+                const seconds = now / 1000;
+
+                const waveVelocityX = isPaused
+                    ? 0
+                    : Math.sin(seconds * waveA + phaseA) * 42 + Math.cos(seconds * waveB + phaseB) * 24;
+                const waveVelocityY = isPaused
+                    ? 0
+                    : Math.cos(seconds * waveA * 0.82 + phaseB) * 38 + Math.sin(seconds * waveB * 1.18 + phaseA) * 28;
+
+                velocityX += (targetVelocityX + waveVelocityX - velocityX) * 0.035;
+                velocityY += (targetVelocityY + waveVelocityY - velocityY) * 0.035;
+
+                x += velocityX * delta;
+                y += velocityY * delta;
+
+                root.style.setProperty("--grid-x", `${x}px`);
+                root.style.setProperty("--grid-y", `${y}px`);
+
+                requestAnimationFrame(tick);
+            };
+
+            document.addEventListener("visibilitychange", () => {
+                if (!document.hidden) {
+                    lastFrame = performance.now();
+                    resumeMotion();
+                }
+            });
+
+            resumeMotion();
+            requestAnimationFrame(tick);
+        })();
+    </script>
+</body>
+</html>
