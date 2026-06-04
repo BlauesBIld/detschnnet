@@ -129,7 +129,7 @@
                 }
 
                 const angle = randomBetween(0, Math.PI * 2);
-                const speed = randomBetween(22, 95);
+                const speed = randomBetween(85, 240);
 
                 targetVelocityX = Math.cos(angle) * speed;
                 targetVelocityY = Math.sin(angle) * speed;
@@ -170,13 +170,13 @@
 
                 const waveVelocityX = isPaused
                     ? 0
-                    : Math.sin(seconds * waveA + phaseA) * 42 + Math.cos(seconds * waveB + phaseB) * 24;
+                    : Math.sin(seconds * waveA + phaseA) * 95 + Math.cos(seconds * waveB + phaseB) * 58;
                 const waveVelocityY = isPaused
                     ? 0
-                    : Math.cos(seconds * waveA * 0.82 + phaseB) * 38 + Math.sin(seconds * waveB * 1.18 + phaseA) * 28;
+                    : Math.cos(seconds * waveA * 0.82 + phaseB) * 88 + Math.sin(seconds * waveB * 1.18 + phaseA) * 64;
 
-                velocityX += (targetVelocityX + waveVelocityX - velocityX) * 0.035;
-                velocityY += (targetVelocityY + waveVelocityY - velocityY) * 0.035;
+                velocityX += (targetVelocityX + waveVelocityX - velocityX) * 0.055;
+                velocityY += (targetVelocityY + waveVelocityY - velocityY) * 0.055;
 
                 x += velocityX * delta;
                 y += velocityY * delta;

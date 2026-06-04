@@ -6,6 +6,10 @@ const botsMetaDataModel = require("../models/botsMetaDataModel");
 const botsAccessTokensModel = require("../models/botsAccessTokensModel");
 const streamerConnectionsModel = require("../models/streamerConnectionsModel");
 
+const BROADCASTER_USER_ID = '138907996';
+const GURKEN_REWARD_ID = '9a42f970-5cbc-49f7-a10d-a7b32d4f92d7';
+const EVENTSUB_SECRET = 'dejansSuperCoolSecret';
+
 async function getUsersInChat(streamer) {
     try {
         const connection = await streamerConnectionsModel.getStreamerConnectionByPlatform(streamer, 'twitch');
@@ -13,8 +17,8 @@ async function getUsersInChat(streamer) {
             throw new Error(`No Twitch connection for ${streamer}`);
         }
 
-        const broadcaster_id = '138907996';
-        const moderator_id = '138907996';
+        const broadcaster_id = BROADCASTER_USER_ID;
+        const moderator_id = BROADCASTER_USER_ID;
 
         const response = await fetch(`https://api.twitch.tv/helix/chat/chatters?broadcaster_id=${broadcaster_id}&moderator_id=${moderator_id}`, {
             method: 'GET',
@@ -102,8 +106,8 @@ async function banUser(streamer, user_id) {
 
         console.log(body);
 
-        const broadcaster_id = '138907996';
-        const moderator_id = '138907996';
+        const broadcaster_id = BROADCASTER_USER_ID;
+        const moderator_id = BROADCASTER_USER_ID;
 
         const response = await fetch(`https://api.twitch.tv/helix/moderation/bans?broadcaster_id=${broadcaster_id}&moderator_id=${moderator_id}`, {
             method: 'POST',
@@ -250,6 +254,134 @@ async function getAndSaveAppAccessToken() {
     }
 }
 
+async function getEventSubCallbackUrl() {
+    if (process.env.TWITCH_EVENTSUB_CALLBACK_URL) {
+        return process.env.TWITCH_EVENTSUB_CALLBACK_URL;
+    }
+
+    const redirect_uri = await botsMetaDataModel.getValueForPlatformAndName('twitch', 'redirect_uri');
+    return new URL('/twitch', redirect_uri).toString();
+}
+
+async function getAppAccessToken() {
+    let appAccessTokenEntry = await botsAccessTokensModel.getAccessTokenForPlatform('twitch');
+
+    if (!appAccessTokenEntry || !appAccessTokenEntry.access_token) {
+        return getAndSaveAppAccessToken();
+    }
+
+    return appAccessTokenEntry.access_token;
+}
+
+async function getEventSubSubscriptions(appAccessToken, after) {
+    const client_id = await botsMetaDataModel.getValueForPlatformAndName('twitch', 'client_id');
+    const url = new URL('https://api.twitch.tv/helix/eventsub/subscriptions');
+
+    if (after) {
+        url.searchParams.set('after', after);
+    }
+
+    const response = await fetch(url, {
+        method: 'GET',
+        mode: "cors",
+        headers: {
+            'Client-ID': client_id,
+            'Authorization': `Bearer ${appAccessToken}`,
+            'Content-Type': 'application/json'
+        }
+    });
+
+    const body = await response.json();
+
+    if (response.status === 401) {
+        const refreshedAppAccessToken = await getAndSaveAppAccessToken();
+        return getEventSubSubscriptions(refreshedAppAccessToken);
+    }
+
+    if (!response.ok) {
+        throw new Error(`Failed to get Twitch EventSub subscriptions: ${response.status} ${JSON.stringify(body)}`);
+    }
+
+    const subscriptions = body.data || [];
+
+    if (body.pagination && body.pagination.cursor) {
+        const nextSubscriptions = await getEventSubSubscriptions(appAccessToken, body.pagination.cursor);
+        return subscriptions.concat(nextSubscriptions);
+    }
+
+    return subscriptions;
+}
+
+async function ensureGurkenEventSubSubscription() {
+    const client_id = await botsMetaDataModel.getValueForPlatformAndName('twitch', 'client_id');
+    const callback = await getEventSubCallbackUrl();
+    let appAccessToken = await getAppAccessToken();
+    const type = 'channel.channel_points_custom_reward_redemption.add';
+    const condition = {
+        broadcaster_user_id: BROADCASTER_USER_ID,
+        reward_id: GURKEN_REWARD_ID
+    };
+
+    const existingSubscriptions = await getEventSubSubscriptions(appAccessToken);
+    const existingSubscription = existingSubscriptions.find(subscription =>
+        subscription.type === type &&
+        subscription.condition &&
+        subscription.condition.broadcaster_user_id === condition.broadcaster_user_id &&
+        subscription.condition.reward_id === condition.reward_id &&
+        subscription.transport &&
+        subscription.transport.method === 'webhook' &&
+        subscription.transport.callback === callback
+    );
+
+    if (existingSubscription) {
+        return existingSubscription;
+    }
+
+    const requestBody = {
+        type,
+        version: '1',
+        condition,
+        transport: {
+            method: 'webhook',
+            callback,
+            secret: EVENTSUB_SECRET
+        }
+    };
+
+    let response = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+        method: 'POST',
+        mode: "cors",
+        headers: {
+            'Client-ID': client_id,
+            'Authorization': `Bearer ${appAccessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    });
+
+    if (response.status === 401) {
+        appAccessToken = await getAndSaveAppAccessToken();
+        response = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+            method: 'POST',
+            mode: "cors",
+            headers: {
+                'Client-ID': client_id,
+                'Authorization': `Bearer ${appAccessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+    }
+
+    const body = await response.json();
+
+    if (!response.ok) {
+        throw new Error(`Failed to create Twitch EventSub subscription: ${response.status} ${JSON.stringify(body)}`);
+    }
+
+    return body.data && body.data[0] ? body.data[0] : body;
+}
+
 async function saveAppAccessTokenForPlatform(platform, access_token) {
     try {
         const currentAppAccessTokenEntry = await botsAccessTokensModel.getAccessTokenForPlatform(platform);
@@ -306,5 +438,6 @@ module.exports = {
     getAndSaveTokensForStreamer,
     getTwitchLinkToAuthorize,
     getAndSaveAppAccessToken,
+    ensureGurkenEventSubSubscription,
     getStreamUpTime
 }

@@ -39,7 +39,7 @@ const MESSAGE_TYPE_REVOCATION = 'revocation';
 // Prepend this string to the HMAC that's created from the message
 const HMAC_PREFIX = 'sha256=';
 
-let recentlyChattedUsers = {"Silverline": Date.now};
+let recentlyChattedUsers = {"Silverline": Date.now()};
 
 const hinaRegex = new RegExp("^hina\\S{4,}", "i");
 
@@ -99,9 +99,13 @@ router.get('/saveTwitchConnection', authenticationService.authenticateJWT, (req,
     } else {
         twitchController.getAndSaveTokensForStreamer(req.user.username, req.query.code).then((body) => {
             twitchLogger.info('New TWITCH access token saved! code: ' + req.query.code + ' access token: ' + body.access_token + ' refresh token: ' + body.refresh_token);
+            return twitchController.ensureGurkenEventSubSubscription();
+        }).then((subscription) => {
+            twitchLogger.info('TWITCH gurken EventSub subscription ready: ' + JSON.stringify(subscription));
             res.redirect('/streamer');
         }).catch(err => {
             console.log(err);
+            twitchLogger.error('Failed to save Twitch connection or create gurken EventSub subscription: ' + err.message);
             res.status(500).json(err);
         });
     }

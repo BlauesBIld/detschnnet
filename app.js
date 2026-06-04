@@ -65,6 +65,8 @@ const gamesRouter = require('./routes/games');
 const streamerRouter = require('./routes/streamer');
 const openAiRouter = require('./routes/openai');
 const workoutRouter = require('./routes/workout');
+require('./services/twitchChat');
+
 app.use('/', indexRouter);
 app.use('/twitch', twitchRouter.router);
 app.use('/riot', riotRouter);
