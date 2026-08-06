@@ -413,11 +413,24 @@ p {
 }
 
 /* ---------- Timer ---------- */
+.timers {
+    width: min(760px, 92vw);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(18px, 6vw, 72px);
+}
+
 .timer {
-    width: min(520px, 92vw);
     margin-top: 6px;
     display: grid;
     gap: 10px;
+}
+
+.timer-title {
+    margin: 0 0 4px;
+    font-family: "Cinzel", system-ui, sans-serif;
+    font-size: clamp(15px, 3.5vw, 20px);
+    letter-spacing: 0.8px;
 }
 
 .timer-line {
@@ -425,9 +438,25 @@ p {
     display: flex;
     justify-content: center;
     gap: 10px;
-    font-size: clamp(18px, 5.4vw, 26px);
+    font-size: clamp(16px, 3.5vw, 26px);
     font-weight: 700;
     letter-spacing: 0.2px;
+}
+
+@media (max-width: 480px) {
+    .timers {
+        width: 96vw;
+        gap: 10px;
+    }
+
+    .timer {
+        gap: 7px;
+    }
+
+    .timer-line {
+        gap: 6px;
+        font-size: 15px;
+    }
 }
 
 .timer-num {

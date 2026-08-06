@@ -235,14 +235,7 @@ requestBgUpdate();
 
 // ---------- relationship timer ----------
 const startDate = new Date("2025-05-14T02:37:00");
-
-const els = {
-    years: document.getElementById("tYears"),
-    months: document.getElementById("tMonths"),
-    days: document.getElementById("tDays"),
-    hours: document.getElementById("tHours"),
-    minutes: document.getElementById("tMinutes")
-};
+const engagementDate = new Date("2026-07-30T20:40:00");
 
 function addMonths(date, months) {
     const d = new Date(date);
@@ -312,9 +305,9 @@ function setTimerLine(numId, labelId, value, singular, pluralForm) {
     labelEl.textContent = plural(value, singular, pluralForm);
 }
 
-function updateTimer() {
+function updateTimer(start, numberPrefix, labelPrefix) {
     const now = new Date();
-    let totalSeconds = Math.max(0, Math.floor((now - startDate) / 1000));
+    let totalSeconds = Math.max(0, Math.floor((now - start) / 1000));
 
     const seconds = totalSeconds % 60;
     totalSeconds = Math.floor(totalSeconds / 60);
@@ -331,16 +324,21 @@ function updateTimer() {
     const months = totalSeconds % 12;
     const years = Math.floor(totalSeconds / 12);
 
-    setTimerLine("tYears", "lYears", years, "year", "years");
-    setTimerLine("tMonths", "lMonths", months, "month", "months");
-    setTimerLine("tDays", "lDays", days, "day", "days");
-    setTimerLine("tHours", "lHours", hours, "hour", "hours");
-    setTimerLine("tMinutes", "lMinutes", minutes, "minute", "minutes");
-    setTimerLine("tSeconds", "lSeconds", seconds, "second", "seconds");
+    setTimerLine(`${numberPrefix}Years`, `${labelPrefix}Years`, years, "year", "years");
+    setTimerLine(`${numberPrefix}Months`, `${labelPrefix}Months`, months, "month", "months");
+    setTimerLine(`${numberPrefix}Days`, `${labelPrefix}Days`, days, "day", "days");
+    setTimerLine(`${numberPrefix}Hours`, `${labelPrefix}Hours`, hours, "hour", "hours");
+    setTimerLine(`${numberPrefix}Minutes`, `${labelPrefix}Minutes`, minutes, "minute", "minutes");
+    setTimerLine(`${numberPrefix}Seconds`, `${labelPrefix}Seconds`, seconds, "second", "seconds");
 }
 
-updateTimer();
-setInterval(updateTimer, 1000);
+function updateTimers() {
+    updateTimer(startDate, "t", "l");
+    updateTimer(engagementDate, "e", "el");
+}
+
+updateTimers();
+setInterval(updateTimers, 1000);
 
 
 const galleryTrack = document.getElementById("galleryTrack");
