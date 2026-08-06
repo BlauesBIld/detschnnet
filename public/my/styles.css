@@ -1,8 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@400;600&display=swap");
 
 html, body {
+    width: 100%;
     height: 100%;
     margin: 0;
+    overflow: hidden;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
 body {
@@ -20,12 +26,21 @@ body {
 }
 
 .deck {
-    height: 100vh;
+    width: 100%;
+    height: var(--viewport-height, 100vh);
     overflow-y: auto;
-    overscroll-behavior: contain;
+    overflow-x: hidden;
+    overscroll-behavior: none;
+    touch-action: pan-x pinch-zoom;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
+}
+
+@supports (height: 100dvh) {
+    .deck {
+        height: var(--viewport-height, 100dvh);
+    }
 }
 
 .deck::-webkit-scrollbar {
@@ -34,14 +49,18 @@ body {
 }
 
 .slide {
-    height: 100vh;
+    width: 100%;
+    height: var(--viewport-height, 100vh);
+    min-height: var(--viewport-height, 100vh);
     display: grid;
     place-items: center;
-    padding: 28px;
+    padding: clamp(10px, calc(var(--viewport-unit, 1vh) * 3), 28px);
+    overflow: hidden;
 }
 
 .content {
-    width: min(980px, 92vw);
+    width: min(980px, 100%);
+    max-height: 100%;
 }
 
 h1, h2 {
@@ -58,11 +77,11 @@ p {
 }
 
 .fancy.big {
-    font-size: clamp(24px, 9vw, 36px);
+    font-size: clamp(24px, min(9vw, calc(var(--viewport-unit, 1vh) * 5.5)), 36px);
 }
 
 .welcome {
-    font-size: clamp(18px, 9vw, 26px);
+    font-size: clamp(17px, min(9vw, calc(var(--viewport-unit, 1vh) * 3.5)), 26px);
 }
 
 .lead {
@@ -102,18 +121,19 @@ p {
 
 /* ---------- Hero (Slide 1) ---------- */
 .hero-centered {
-    min-height: calc(100vh - 56px);
+    height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    gap: 10px;
+    gap: clamp(2px, var(--viewport-unit, 1vh), 10px);
 }
 
 .hero-kicker {
-    font-size: 16px;
-    line-height: 1.55;
+    font-size: clamp(12px, calc(var(--viewport-unit, 1vh) * 2.1), 16px);
+    line-height: 1.35;
     opacity: 0.92;
     max-width: 48ch;
     margin: 0 0 6px 0;
@@ -130,7 +150,7 @@ p {
 
 .hero-name {
     font-weight: 400;
-    font-size: clamp(46px, 9vw, 72px);
+    font-size: clamp(32px, min(9vw, calc(var(--viewport-unit, 1vh) * 7.3)), 72px);
     line-height: 0.95;
     margin: 0;
 }
@@ -141,17 +161,20 @@ p {
     letter-spacing: 0.9px;
     text-transform: lowercase;
     opacity: 0.86;
-    margin: 10px 0 6px 0;
+    margin: clamp(2px, var(--viewport-unit, 1vh), 10px) 0 clamp(2px, calc(var(--viewport-unit, 1vh) * 0.6), 6px) 0;
 }
 
 .hero-photoWrap {
     display: grid;
     place-items: center;
-    margin-top: 6px;
+    min-height: 0;
+    margin-top: clamp(2px, calc(var(--viewport-unit, 1vh) * 0.6), 6px);
 }
 
 .hero-photo {
-    width: min(300px, 74vw);
+    width: auto;
+    height: min(calc(var(--viewport-unit, 1vh) * 38), 400px);
+    max-width: 74vw;
     aspect-ratio: 3 / 4;
     object-fit: cover;
     border-radius: 26px;
@@ -159,9 +182,9 @@ p {
 }
 
 .hero-swipe {
-    font-size: 14px;
+    font-size: clamp(11px, calc(var(--viewport-unit, 1vh) * 1.9), 14px);
     opacity: 0.82;
-    margin-top: 12px;
+    margin-top: clamp(2px, var(--viewport-unit, 1vh), 12px);
 }
 
 /* ---------- Stagger base (1–15) ---------- */
@@ -409,21 +432,29 @@ p {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 10px;
+    height: 100%;
+    justify-content: center;
+    gap: clamp(4px, var(--viewport-unit, 1vh), 10px);
 }
 
 /* ---------- Timer ---------- */
 .timers {
-    width: min(760px, 92vw);
+    width: min(760px, 100%);
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(18px, 6vw, 72px);
 }
 
 .timer {
-    margin-top: 6px;
+    margin-top: clamp(2px, calc(var(--viewport-unit, 1vh) * 0.6), 6px);
     display: grid;
-    gap: 10px;
+    gap: clamp(4px, var(--viewport-unit, 1vh), 10px);
+}
+
+.center-stack > h2,
+.center-stack > p {
+    margin-top: clamp(2px, calc(var(--viewport-unit, 1vh) * 0.6), 6px);
+    margin-bottom: clamp(2px, calc(var(--viewport-unit, 1vh) * 0.6), 6px);
 }
 
 .timer-title {
@@ -438,14 +469,14 @@ p {
     display: flex;
     justify-content: center;
     gap: 10px;
-    font-size: clamp(16px, 3.5vw, 26px);
+    font-size: clamp(14px, min(3.5vw, calc(var(--viewport-unit, 1vh) * 3.2)), 26px);
     font-weight: 700;
     letter-spacing: 0.2px;
 }
 
 @media (max-width: 480px) {
     .timers {
-        width: 96vw;
+        width: 100%;
         gap: 10px;
     }
 
@@ -477,14 +508,14 @@ p {
     list-style: none;
     padding: 0;
     margin: 8px 0 0 0;
-    width: min(620px, 92vw);
+    width: min(620px, 100%);
     display: grid;
-    gap: 10px;
+    gap: clamp(2px, var(--viewport-unit, 1vh), 10px);
 }
 
 .facts li {
-    font-size: 18px;
-    line-height: 1.55;
+    font-size: clamp(13px, calc(var(--viewport-unit, 1vh) * 2.4), 18px);
+    line-height: 1.35;
     opacity: 0.92;
 }
 
@@ -498,7 +529,7 @@ p {
 
 /* ---------- Auto sliding gallery ---------- */
 .gallery {
-    width: min(880px, 92vw);
+    width: min(880px, 100%);
     margin-top: 10px;
     overflow: hidden;
     border-radius: 22px;
@@ -514,7 +545,8 @@ p {
 }
 
 .gallery img {
-    height: min(54vh, 360px);
+    height: min(calc(var(--viewport-unit, 1vh) * 54), 360px);
+    max-width: 72vw;
     width: auto;
     aspect-ratio: 3 / 4;
     object-fit: cover;
@@ -547,11 +579,14 @@ p {
 .page-photoWrap {
     display: grid;
     place-items: center;
-    margin: 6px 0 10px 0;
+    min-height: 0;
+    margin: clamp(2px, calc(var(--viewport-unit, 1vh) * 0.6), 6px) 0 clamp(3px, var(--viewport-unit, 1vh), 10px) 0;
 }
 
 .page-photo {
-    width: min(260px, 72vw);
+    width: auto;
+    height: min(calc(var(--viewport-unit, 1vh) * 34), 346px);
+    max-width: 72vw;
     aspect-ratio: 3 / 4;
     object-fit: cover;
     border-radius: 26px;
@@ -561,7 +596,37 @@ p {
 /* Slightly smaller on very small screens */
 @media (max-width: 600px) {
     .page-photo {
-        width: min(200px, 76vw);
+        max-width: 66vw;
         border-radius: 22px;
+    }
+}
+
+@media (max-height: 600px) {
+    .lead,
+    .bigline {
+        font-size: 14px;
+        line-height: 1.35;
+    }
+
+    .small {
+        font-size: 11px;
+    }
+
+    .gallery {
+        margin-top: 2px;
+    }
+
+    .gallery-track {
+        padding: 8px;
+    }
+}
+
+@media (max-height: 500px) {
+    .page-photo {
+        height: min(calc(var(--viewport-unit, 1vh) * 25), 190px);
+    }
+
+    .gallery img {
+        height: min(calc(var(--viewport-unit, 1vh) * 42), 240px);
     }
 }

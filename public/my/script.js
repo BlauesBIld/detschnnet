@@ -3,9 +3,10 @@ const background = document.getElementById("background");
 const slides = Array.from(document.querySelectorAll(".slide"));
 
 // Config knobs
-const scrollDurationMs = 1400;     // slower/faster slide transition
-const inputCooldownMs = 950;       // prevents rapid multi-slide jumps
-const wheelThreshold = 12;         // ignore tiny wheel movements
+const scrollDurationMs = 900;
+const inputCooldownMs = 950;
+const wheelThreshold = 36;
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // Each slide defines its gradient as two colors (start, end)
 const gradients = [
@@ -82,7 +83,7 @@ function updateBackgroundFromScroll() {
     rafPending = false;
 
     const y = deck.scrollTop;
-    const h = window.innerHeight;
+    const h = deck.clientHeight || window.innerHeight;
 
     const raw = y / h;
     const i = Math.floor(raw);
@@ -107,12 +108,12 @@ function requestBgUpdate() {
 }
 
 deck.addEventListener("scroll", requestBgUpdate, {passive: true});
-window.addEventListener("resize", requestBgUpdate);
 
 // ---------- one-slide-at-a-time navigation ----------
 let activeIndex = 0;
 let isAnimating = false;
 let inputLocked = false;
+let animationFrame = 0;
 
 function scrollToIndex(index) {
     activeIndex = clampIndex(index);
@@ -121,7 +122,18 @@ function scrollToIndex(index) {
     const targetTop = slides[activeIndex].offsetTop;
     const delta = targetTop - startTop;
 
-    if (Math.abs(delta) < 2) return;
+    if (Math.abs(delta) < 2) {
+        deck.scrollTop = targetTop;
+        return;
+    }
+
+    cancelAnimationFrame(animationFrame);
+
+    if (prefersReducedMotion) {
+        deck.scrollTop = targetTop;
+        updateBackgroundFromScroll();
+        return;
+    }
 
     isAnimating = true;
 
@@ -134,15 +146,18 @@ function scrollToIndex(index) {
         deck.scrollTop = startTop + delta * eased;
         updateBackgroundFromScroll();
 
-        if (t < 1) requestAnimationFrame(frame);
-        else isAnimating = false;
+        if (t < 1) animationFrame = requestAnimationFrame(frame);
+        else {
+            deck.scrollTop = targetTop;
+            isAnimating = false;
+        }
     }
 
-    requestAnimationFrame(frame);
+    animationFrame = requestAnimationFrame(frame);
 }
 
 function currentIndexFromScroll() {
-    const y = deck.scrollTop + window.innerHeight * 0.35;
+    const y = deck.scrollTop;
 
     let best = 0;
     let bestDist = Infinity;
@@ -176,15 +191,31 @@ function lockInput() {
 }
 
 // Wheel -> one slide
-deck.addEventListener("wheel", (e) => {
-    if (isAnimating || inputLocked) return;
-    if (Math.abs(e.deltaY) < wheelThreshold) return;
+let wheelDelta = 0;
+let wheelResetTimer = 0;
 
+deck.addEventListener("wheel", (e) => {
     e.preventDefault();
 
-    if (e.deltaY > 0) goNext();
+    if (isAnimating || inputLocked) return;
+
+    const multiplier = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? deck.clientHeight : 1;
+    const delta = e.deltaY * multiplier;
+
+    if (wheelDelta && Math.sign(wheelDelta) !== Math.sign(delta)) wheelDelta = 0;
+    wheelDelta += delta;
+
+    clearTimeout(wheelResetTimer);
+    wheelResetTimer = setTimeout(() => {
+        wheelDelta = 0;
+    }, 180);
+
+    if (Math.abs(wheelDelta) < wheelThreshold) return;
+
+    if (wheelDelta > 0) goNext();
     else goPrev();
 
+    wheelDelta = 0;
     lockInput();
 }, {passive: false});
 
@@ -197,6 +228,10 @@ deck.addEventListener("touchstart", (e) => {
     touchStartY = e.touches[0].clientY;
     touchStartX = e.touches[0].clientX;
 }, {passive: true});
+
+deck.addEventListener("touchmove", (e) => {
+    if (e.touches.length === 1 && e.cancelable) e.preventDefault();
+}, {passive: false});
 
 deck.addEventListener("touchend", (e) => {
     if (isAnimating || inputLocked) return;
@@ -214,6 +249,11 @@ deck.addEventListener("touchend", (e) => {
     lockInput();
 }, {passive: true});
 
+deck.addEventListener("touchcancel", () => {
+    touchStartY = 0;
+    touchStartX = 0;
+}, {passive: true});
+
 // Optional: keyboard navigation
 window.addEventListener("keydown", (e) => {
     if (isAnimating || inputLocked) return;
@@ -229,7 +269,27 @@ window.addEventListener("keydown", (e) => {
     }
 });
 
+// Match the actual visible viewport, including mobile browser bars and
+// orientation changes, then keep the current slide precisely aligned.
+let viewportResizeFrame = 0;
+
+function syncViewportHeight() {
+    const viewportHeight = Math.round(window.visualViewport?.height || window.innerHeight);
+    document.documentElement.style.setProperty("--viewport-height", `${viewportHeight}px`);
+    document.documentElement.style.setProperty("--viewport-unit", `${viewportHeight / 100}px`);
+
+    cancelAnimationFrame(viewportResizeFrame);
+    viewportResizeFrame = requestAnimationFrame(() => {
+        if (!isAnimating) deck.scrollTop = slides[activeIndex].offsetTop;
+        requestBgUpdate();
+    });
+}
+
+window.addEventListener("resize", syncViewportHeight, {passive: true});
+window.visualViewport?.addEventListener("resize", syncViewportHeight, {passive: true});
+
 // Init
+syncViewportHeight();
 scrollToIndex(0);
 requestBgUpdate();
 
