@@ -293,9 +293,18 @@ syncViewportHeight();
 scrollToIndex(0);
 requestBgUpdate();
 
-// ---------- relationship timer ----------
-const startDate = new Date("2025-05-14T02:37:00");
-const engagementDate = new Date("2026-07-30T20:40:00");
+// ---------- relationship timers ----------
+// Give every timer a different random starting second so their second counters
+// do not move in lockstep. The values remain stable until the page is reloaded.
+const randomSeconds = [];
+while (randomSeconds.length < 3) {
+    const second = Math.floor(Math.random() * 59) + 1;
+    if (!randomSeconds.includes(second)) randomSeconds.push(second);
+}
+
+const friendshipDate = new Date(2024, 2, 27, 20, 23, randomSeconds[0]);
+const startDate = new Date(2025, 4, 14, 2, 37, randomSeconds[1]);
+const engagementDate = new Date(2026, 6, 30, 20, 40, randomSeconds[2]);
 
 function addMonths(date, months) {
     const d = new Date(date);
@@ -393,6 +402,7 @@ function updateTimer(start, numberPrefix, labelPrefix) {
 }
 
 function updateTimers() {
+    updateTimer(friendshipDate, "f", "fl");
     updateTimer(startDate, "t", "l");
     updateTimer(engagementDate, "e", "el");
 }
