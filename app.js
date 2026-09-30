@@ -97,4 +97,5 @@ app.use(errorHandler);
 
 app.listen(port, () => {
     console.log(`Listening at http://localhost:${port}/workout`);
+    require('./services/nightbotTokenRenewal').start();
 });

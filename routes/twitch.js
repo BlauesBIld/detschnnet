@@ -115,8 +115,8 @@ router.get('/saveNightBotConnection', authenticationService.authenticateJWT, (re
     if (req.query.error) {
         console.log(req.query.error);
     } else {
-        nightBotController.getAndSaveTokensForStreamer(req.user.username, req.query.code).then((body) => {
-            twitchLogger.info('New NIGHTBOT access token saved! code: ' + req.query.code + ' access token: ' + body.access_token + ' refresh token: ' + body.refresh_token);
+        nightBotController.getAndSaveTokensForStreamer(req.user.username, req.query.code).then(() => {
+            twitchLogger.info('Nightbot authorization saved for ' + req.user.username);
             res.redirect('/streamer');
         }).catch(err => {
             console.log(err);
@@ -186,15 +186,17 @@ router.post('/', (req, res) => {
                     console.log(e);
                 }
             } else if (notification.subscription.type === 'channel.channel_points_custom_reward_redemption.add') {
-                addToUserCounter(notification.event.user_name, 'chiara', 'gurken_spent', notification.event.reward.cost).then(() => {
+                addToUserCounter(notification.event.user_name, 'chiara', 'gurken_spent', notification.event.reward.cost).then(async () => {
                     if (notification.event.reward.id === '9a42f970-5cbc-49f7-a10d-a7b32d4f92d7') {
                         if (getRandomInt(500) < 20) {
-                            sendGoldenGurkenMessage('chiara', notification);
+                            await sendGoldenGurkenMessage('chiara', notification);
                         } else {
-                            sendGurkenMessage('chiara', notification);
+                            await sendGurkenMessage('chiara', notification);
                         }
                         twitchLogger.info(`${notification.event.user_name} redeemed a gurken-reward`);
                     }
+                }).catch(err => {
+                    twitchLogger.error('Gurken redemption failed: ' + err.message);
                 });
             }
             res.sendStatus(204);
@@ -300,17 +302,7 @@ async function sendGurkenMessage(streamer, notification) {
         message = `@${notification.event.user_name} bewirft @${randomUser} mit einer Gurke! Es wurden insgesamt ${counter} Gurken verschwendet.`;
     }
 
-    await nightBotController.sendMessageInChannel('chiara', message).then(res => {
-        if (res.status === 401) {
-            nightBotController.refreshAccessToken().then(res => {
-                if (res.status === 200) {
-                    nightBotController.sendMessageInChannel('chiara', message);
-                }
-            });
-        }
-    }).catch(err => {
-        console.log(err);
-    });
+    await nightBotController.sendMessageInChannel(streamer, message);
 }
 
 
@@ -359,17 +351,7 @@ async function sendGoldenGurkenMessage(streamer, notification) {
         message = otherMessages[Math.floor(Math.random() * otherMessages.length)];
     }
 
-    await nightBotController.sendMessageInChannel('chiara', message).then(res => {
-        if (res.status === 401) {
-            nightBotController.refreshAccessToken().then(res => {
-                if (res.status === 200) {
-                    nightBotController.sendMessageInChannel('chiara', message);
-                }
-            });
-        }
-    }).catch(err => {
-        console.log(err);
-    });
+    await nightBotController.sendMessageInChannel(streamer, message);
 }
 
 module.exports = {
