@@ -48,9 +48,10 @@ MULTIPLIER = {
 
 ONE_TIME_REMINDER_TASKS: dict[str, asyncio.Task] = {}
 DAILY_TASKS: dict[str, asyncio.Task] = {}
+TIMED_REMINDER_TASKS: dict[str, asyncio.Task] = {}
 
 def _empty_state():
-    return {"reminders": [], "daily": []}
+    return {"reminders": [], "daily": [], "timed_reminders": []}
 
 def load_state():
     if not os.path.exists(STATE_FILE):
@@ -62,6 +63,7 @@ def load_state():
             return _empty_state()
         data["reminders"] = list(data.get("reminders", []))
         data["daily"] = list(data.get("daily", []))
+        data["timed_reminders"] = list(data.get("timed_reminders", []))
         return data
     except Exception:
         return _empty_state()
@@ -217,11 +219,16 @@ def parse_duration(text: str) -> int | None:
     Returns total seconds or None if invalid.
     """
     total = 0
-    matched_any = False
-    for amount, unit in DURATION_PATTERN.findall(text):
-        matched_any = True
-        total += int(amount) * MULTIPLIER[unit.lower()]
-    return total if matched_any and total > 0 else None
+    position = 0
+    for match in DURATION_PATTERN.finditer(text):
+        if text[position:match.start()].strip():
+            return None
+        try:
+            total += int(match.group(1)) * MULTIPLIER[match.group(2).lower()]
+        except ValueError:
+            return None
+        position = match.end()
+    return total if position and not text[position:].strip() and total > 0 else None
 
 def parse_hhmm(time_str: str) -> tuple[int, int] | None:
     if not re.fullmatch(r"\d{2}:\d{2}", time_str.strip()):
@@ -311,6 +318,69 @@ async def ensure_all_one_time_reminders_loaded():
             continue
         ONE_TIME_REMINDER_TASKS[rec_id] = asyncio.create_task(schedule_one_time_reminder_task(rec))
 
+async def add_timed_reminder_record(channel_id: int, user_id: int, message: str,
+                                    interval_seconds: int, interval_text: str,
+                                    first_fire_at_utc: datetime):
+    state = load_state()
+    rec = {
+        "id": str(uuid.uuid4()),
+        "channel_id": channel_id,
+        "user_id": user_id,
+        "message": message,
+        "interval_seconds": interval_seconds,
+        "interval_text": interval_text,
+        "next_fire_at_utc": first_fire_at_utc.isoformat(),
+        "type": "timed",
+    }
+    state["timed_reminders"].append(rec)
+    await save_state(state)
+    return rec
+
+async def advance_timed_reminder_record(rec_id: str, due_at_utc: datetime,
+                                        interval_seconds: int) -> datetime | None:
+    """Keep the next send on the original UTC interval, skipping missed sends."""
+    state = load_state()
+    for rec in state["timed_reminders"]:
+        if rec.get("id") == rec_id:
+            now_utc = datetime.now(tz=ZoneInfo("UTC"))
+            steps = max(1, int((now_utc - due_at_utc).total_seconds() // interval_seconds) + 1)
+            next_fire_at_utc = due_at_utc + timedelta(seconds=steps * interval_seconds)
+            rec["next_fire_at_utc"] = next_fire_at_utc.isoformat()
+            await save_state(state)
+            return next_fire_at_utc
+    return None
+
+async def schedule_one_timed_reminder_task(rec: dict):
+    rec_id = rec["id"]
+    interval_seconds = int(rec["interval_seconds"])
+    due_at_utc = datetime.fromisoformat(rec["next_fire_at_utc"])
+    try:
+        while True:
+            delay = (due_at_utc - datetime.now(tz=ZoneInfo("UTC"))).total_seconds()
+            if delay > 0:
+                await asyncio.sleep(min(delay, 3600))
+                continue
+
+            next_fire_at_utc = await advance_timed_reminder_record(rec_id, due_at_utc, interval_seconds)
+            if next_fire_at_utc is None:
+                return
+            due_at_utc = next_fire_at_utc
+            await send_reminder(rec["channel_id"], rec["user_id"], rec["message"])
+    finally:
+        if TIMED_REMINDER_TASKS.get(rec_id) is asyncio.current_task():
+            TIMED_REMINDER_TASKS.pop(rec_id, None)
+
+async def ensure_all_timed_reminders_loaded():
+    state = load_state()
+    for rec in state["timed_reminders"]:
+        rec_id = rec.get("id")
+        if not rec_id:
+            continue
+        task = TIMED_REMINDER_TASKS.get(rec_id)
+        if task and not task.done():
+            continue
+        TIMED_REMINDER_TASKS[rec_id] = asyncio.create_task(schedule_one_timed_reminder_task(rec))
+
 async def schedule_one_daily_task(rec: dict):
     """
     Wait until next time-of-day in Europe/Vienna, send, then possibly shift for the next day by increment,
@@ -372,6 +442,80 @@ async def remind_slash(interaction: discord.Interaction, when: str, message: str
     )
 
     asyncio.create_task(schedule_reminder(interaction.channel, interaction.user, seconds, message))
+
+@bot.tree.command(name="timedreminder", description="Repeat a reminder at an interval, with an optional starting delay.")
+@app_commands.describe(
+    interval="Time between reminders, e.g. 15d or 1h30m",
+    start_in="Optional delay before the first reminder, e.g. 2h12m; starts now if omitted",
+    message="What should I remind you about?",
+)
+async def timedreminder_slash(interaction: discord.Interaction, interval: str,
+                              start_in: str | None = None, message: str = "Timed reminder"):
+    interval_seconds = parse_duration(interval)
+    start_seconds = parse_duration(start_in) if start_in is not None else 0
+    if interval_seconds is None or start_seconds is None:
+        await interaction.response.send_message(
+            "❌ Invalid time. Use `30s`, `15m`, `2h`, `3d`, `1w`, or combinations like `2h12m`.",
+            ephemeral=True,
+        )
+        return
+
+    try:
+        first_fire_at_utc = datetime.now(tz=ZoneInfo("UTC")) + timedelta(seconds=start_seconds)
+        timedelta(seconds=interval_seconds)
+    except OverflowError:
+        await interaction.response.send_message("❌ That duration is too long.", ephemeral=True)
+        return
+
+    rec = await add_timed_reminder_record(
+        interaction.channel.id, interaction.user.id, message, interval_seconds, interval, first_fire_at_utc
+    )
+    TIMED_REMINDER_TASKS[rec["id"]] = asyncio.create_task(schedule_one_timed_reminder_task(rec))
+    first_local = first_fire_at_utc.astimezone(TZ).strftime("%Y-%m-%d %H:%M:%S (%Z)")
+    start_description = "starting **now**" if start_in is None else f"first at **{first_local}**"
+    await interaction.response.send_message(
+        f"✅ Timed reminder set, {start_description}, then every **{interval}**: _{message}_"
+    )
+
+@bot.tree.command(name="listtimedreminder", description="List your repeating timed reminders in this channel.")
+async def listtimedreminder_slash(interaction: discord.Interaction):
+    state = load_state()
+    reminders = [r for r in state["timed_reminders"]
+                 if r.get("user_id") == interaction.user.id and r.get("channel_id") == interaction.channel.id]
+    if not reminders:
+        await interaction.response.send_message("No timed reminders saved in this channel for you.", ephemeral=True)
+        return
+
+    lines = []
+    for index, rec in enumerate(reminders, start=1):
+        next_local = datetime.fromisoformat(rec["next_fire_at_utc"]).astimezone(TZ)
+        next_str = next_local.strftime("%Y-%m-%d %H:%M:%S (%Z)")
+        lines.append(
+            f"**{index}.** Every {rec.get('interval_text', str(rec['interval_seconds']) + 's')}; "
+            f"next: {next_str} — _{rec['message']}_"
+        )
+    await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
+@bot.tree.command(name="deletetimedreminder", description="Delete a timed reminder by its index from /listtimedreminder.")
+@app_commands.describe(index="Index from /listtimedreminder (starting at 1)")
+async def deletetimedreminder_slash(interaction: discord.Interaction, index: int):
+    state = load_state()
+    reminders = state["timed_reminders"]
+    filtered = [(i, r) for i, r in enumerate(reminders)
+                if r.get("user_id") == interaction.user.id and r.get("channel_id") == interaction.channel.id]
+    if index < 1 or index > len(filtered):
+        await interaction.response.send_message(
+            "❌ Invalid index. Use `/listtimedreminder` to see valid indices.", ephemeral=True
+        )
+        return
+
+    global_index, rec = filtered[index - 1]
+    reminders.pop(global_index)
+    await save_state(state)
+    task = TIMED_REMINDER_TASKS.pop(rec["id"], None)
+    if task and not task.done():
+        task.cancel()
+    await interaction.response.send_message(f"🗑️ Deleted timed reminder **{index}**: _{rec['message']}_.")
 
 @bot.tree.command(
     name="daily",
@@ -723,6 +867,7 @@ async def on_ready():
 
     await ensure_all_one_time_reminders_loaded()
     await ensure_all_dailies_loaded()
+    await ensure_all_timed_reminders_loaded()
 
     global DAILY_QUESTION_TASK
     if DAILY_QUESTION_TASK is None or DAILY_QUESTION_TASK.done():
