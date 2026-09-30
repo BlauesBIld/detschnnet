@@ -15,9 +15,17 @@ load_dotenv(os.path.join(BOT_DIR, ".env"))
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 DAILY_QUESTION_TASK: asyncio.Task | None = None
+COUPLE_USER_IDS = frozenset({255195754702962688, 218644051770081281})
+COUPLE_NOTIFICATION_CHANNEL_ID = 1376964700910391486
+COUPLE_VOICE_MESSAGE = (
+    "Hello, I can see that both of you just got together in a voice channel! "
+    "Why don't you turn on your cameras so you can see each other and be even happier? "
+    "I only see a win-win here ❤️😊"
+)
 
 
 intents = discord.Intents.default()
+intents.voice_states = True
 
 allowed = discord.AllowedMentions(
     everyone=False,
@@ -859,6 +867,32 @@ async def listreminders_slash(interaction: discord.Interaction):
         "\n".join(lines),
         ephemeral=True
     )
+
+@bot.event
+async def on_voice_state_update(member: discord.Member, before: discord.VoiceState,
+                                after: discord.VoiceState):
+    if member.id not in COUPLE_USER_IDS or after.channel is None:
+        return
+    if before.channel == after.channel:
+        return
+
+    other_user_id = next(user_id for user_id in COUPLE_USER_IDS if user_id != member.id)
+    if other_user_id not in after.channel.voice_states:
+        return
+
+    channel = bot.get_channel(COUPLE_NOTIFICATION_CHANNEL_ID)
+    if channel is None:
+        try:
+            channel = await bot.fetch_channel(COUPLE_NOTIFICATION_CHANNEL_ID)
+        except discord.DiscordException as exc:
+            print(f"Could not fetch couple notification channel: {exc}")
+            return
+
+    try:
+        await channel.send(COUPLE_VOICE_MESSAGE)
+    except discord.DiscordException as exc:
+        print(f"Could not send couple voice notification: {exc}")
+
 
 @bot.event
 async def on_ready():
