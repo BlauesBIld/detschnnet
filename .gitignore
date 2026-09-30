@@ -254,3 +254,9 @@ dist
 
 # End of https://www.toptal.com/developers/gitignore/api/webstorm
 /public/img/games/
+
+# BeeriBot local runtime and secrets
+/bot/.env
+/bot/.venv/
+/bot/scheduled.json
+/bot/__pycache__/

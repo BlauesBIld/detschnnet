@@ -18,6 +18,9 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+    - name: Upload deploy script
+      run: scp -o StrictHostKeyChecking=no deploy-script.sh detschn@detschn.net:/home/detschn/website/deploy-script.sh
+
     - name: Deploy to server
       run: |
         ssh -o StrictHostKeyChecking=no detschn@detschn.net 'bash ~/website/deploy-script.sh'
