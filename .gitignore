@@ -259,4 +259,6 @@ dist
 /bot/.env
 /bot/.venv/
 /bot/scheduled.json
+/bot/voice_notification_last_sent.txt
+/bot/voice_notification_last_sent.txt.tmp
 /bot/__pycache__/

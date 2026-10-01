@@ -17,6 +17,7 @@ CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 DAILY_QUESTION_TASK: asyncio.Task | None = None
 COUPLE_USER_IDS = frozenset({255195754702962688, 218644051770081281})
 COUPLE_NOTIFICATION_CHANNEL_ID = 1376964700910391486
+COUPLE_NOTIFICATION_COOLDOWN = timedelta(hours=12)
 COUPLE_VOICE_MESSAGE = (
     "Hello, I can see that both of you just got together in a voice channel! "
     "Why don't you turn on your cameras so you can see each other and be even happier? "
@@ -41,8 +42,10 @@ bot = commands.Bot(
 )
 
 STATE_FILE = os.path.join(BOT_DIR, "scheduled.json")
+COUPLE_NOTIFICATION_STATE_FILE = os.path.join(BOT_DIR, "voice_notification_last_sent.txt")
 TZ = ZoneInfo("Europe/Vienna")
 STATE_LOCK = asyncio.Lock()
+COUPLE_NOTIFICATION_LOCK = asyncio.Lock()
 
 DURATION_PATTERN = re.compile(r"(?i)(\d+)\s*([smhdw])")
 
@@ -868,6 +871,22 @@ async def listreminders_slash(interaction: discord.Interaction):
         ephemeral=True
     )
 
+def load_couple_notification_time() -> datetime | None:
+    try:
+        with open(COUPLE_NOTIFICATION_STATE_FILE, "r", encoding="utf-8") as f:
+            last_sent = datetime.fromisoformat(f.read().strip())
+        return last_sent if last_sent.utcoffset() is not None else None
+    except (OSError, ValueError):
+        return None
+
+
+def save_couple_notification_time(sent_at: datetime):
+    temporary_file = COUPLE_NOTIFICATION_STATE_FILE + ".tmp"
+    with open(temporary_file, "w", encoding="utf-8") as f:
+        f.write(sent_at.isoformat())
+    os.replace(temporary_file, COUPLE_NOTIFICATION_STATE_FILE)
+
+
 @bot.event
 async def on_voice_state_update(member: discord.Member, before: discord.VoiceState,
                                 after: discord.VoiceState):
@@ -880,19 +899,31 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
     if other_user_id not in after.channel.voice_states:
         return
 
-    channel = bot.get_channel(COUPLE_NOTIFICATION_CHANNEL_ID)
-    if channel is None:
-        try:
-            channel = await bot.fetch_channel(COUPLE_NOTIFICATION_CHANNEL_ID)
-        except discord.DiscordException as exc:
-            print(f"Could not fetch couple notification channel: {exc}")
+    async with COUPLE_NOTIFICATION_LOCK:
+        now = datetime.now(tz=ZoneInfo("UTC"))
+        last_sent = load_couple_notification_time()
+        if last_sent is not None and now - last_sent < COUPLE_NOTIFICATION_COOLDOWN:
             return
 
-    try:
-        mentions = " ".join(f"<@{user_id}>" for user_id in sorted(COUPLE_USER_IDS))
-        await channel.send(f"{mentions}\n{COUPLE_VOICE_MESSAGE}")
-    except discord.DiscordException as exc:
-        print(f"Could not send couple voice notification: {exc}")
+        channel = bot.get_channel(COUPLE_NOTIFICATION_CHANNEL_ID)
+        if channel is None:
+            try:
+                channel = await bot.fetch_channel(COUPLE_NOTIFICATION_CHANNEL_ID)
+            except discord.DiscordException as exc:
+                print(f"Could not fetch couple notification channel: {exc}")
+                return
+
+        try:
+            mentions = " ".join(f"<@{user_id}>" for user_id in sorted(COUPLE_USER_IDS))
+            await channel.send(f"{mentions}\n{COUPLE_VOICE_MESSAGE}")
+        except discord.DiscordException as exc:
+            print(f"Could not send couple voice notification: {exc}")
+            return
+
+        try:
+            save_couple_notification_time(datetime.now(tz=ZoneInfo("UTC")))
+        except OSError as exc:
+            print(f"Could not save couple voice notification time: {exc}")
 
 
 @bot.event
