@@ -889,7 +889,8 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
             return
 
     try:
-        await channel.send(COUPLE_VOICE_MESSAGE)
+        mentions = " ".join(f"<@{user_id}>" for user_id in sorted(COUPLE_USER_IDS))
+        await channel.send(f"{mentions}\n{COUPLE_VOICE_MESSAGE}")
     except discord.DiscordException as exc:
         print(f"Could not send couple voice notification: {exc}")
 

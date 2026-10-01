@@ -47,7 +47,8 @@ class VoiceNotificationTests(unittest.IsolatedAsyncioTestCase):
         destination.send.assert_not_awaited()
 
         await handler(second, empty, SimpleNamespace(channel=together))
-        destination.send.assert_awaited_once_with(ns["COUPLE_VOICE_MESSAGE"])
+        mentions = " ".join(f"<@{user_id}>" for user_id in sorted(ns["COUPLE_USER_IDS"]))
+        destination.send.assert_awaited_once_with(f"{mentions}\n{ns['COUPLE_VOICE_MESSAGE']}")
 
         same_channel = SimpleNamespace(channel=together)
         await handler(second, same_channel, same_channel)
