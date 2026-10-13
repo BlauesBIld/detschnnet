@@ -109,9 +109,12 @@ function setup({width = 390, height = 844, reduced = false} = {}) {
         tick(ms = 16) {now += ms; const pending = [...frames.values()]; frames.clear(); pending.forEach(handler => handler(now));},
         finishAnimations() {animations.forEach(animation => animation.finish());},
         resize(w, h) {map.clientWidth = viewer.clientWidth = width = w; map.clientHeight = viewer.clientHeight = height = h; resizes.forEach(handler => handler());},
-        pointer(type, tile, x = 30, y = 30) {
+        pointer(type, tile, x = 30, y = 30, extra = {}) {
             map.events[type]({type, isPrimary: true, button: 0, pointerId: 1,
-                clientX: x, clientY: y, target: {closest: () => tile}});
+                clientX: x, clientY: y, target: {closest: () => tile}, ...extra});
+        },
+        click(tile, detail = 1) {
+            map.events.click({detail, target: {closest: () => tile}, preventDefault() {}});
         }
     };
 }
@@ -188,6 +191,62 @@ test('open and close animate rotation, scale and crop while the map keeps drifti
     assert.equal(s.viewer.open, false);
     assert.equal(s.focus.dataset.photo, 13);
     assert.equal(s.plane.children.some(button => button.classes.has('is-viewer-source')), false);
+});
+
+test('a bubbled capture loss from the touched tile must not cancel the map gesture', async () => {
+    const s = setup(), tile = s.plane.children[0];
+    s.pointer('pointerdown', tile, 30, 30, {pointerType: 'touch'});
+    // Touch implicitly captures to the button. Moving capture to the map emits
+    // lostpointercapture on that button, which bubbles through the map listener.
+    s.pointer('lostpointercapture', tile, 30, 30, {target: tile});
+    const held = s.plane.style.transform;
+    s.tick(); assert.equal(s.plane.style.transform, held);
+    s.pointer('pointerup', tile, 30, 30, {pointerType: 'touch'});
+    await flush();
+    assert.equal(s.viewer.open, true);
+    s.finishAnimations(); await flush();
+});
+
+test('native mouse and touch clicks also open photos when the pointer path is unavailable', async () => {
+    for (const detail of [0, 1]) {
+        const s = setup(), tile = s.plane.children[0];
+        s.click(tile, detail); await flush();
+        assert.equal(s.viewer.open, true);
+        assert.equal(s.history.state.lovePhoto, tile.dataset.photo);
+        s.finishAnimations(); await flush();
+    }
+});
+
+test('small touch jitter counts as a tap, but a drag must not open on its following click', async () => {
+    const tap = setup(), tile = tap.plane.children[0];
+    tap.pointer('pointerdown', tile, 30, 30, {pointerType: 'touch'});
+    tap.pointer('pointermove', tile, 40, 34, {pointerType: 'touch'});
+    tap.pointer('pointerup', tile, 40, 34, {pointerType: 'touch'});
+    await flush(); assert.equal(tap.viewer.open, true);
+    tap.finishAnimations(); await flush();
+
+    const drag = setup(), dragged = drag.plane.children[0];
+    drag.pointer('pointerdown', dragged, 30, 30, {pointerType: 'touch'});
+    drag.pointer('pointermove', dragged, 80, 90, {pointerType: 'touch'});
+    drag.pointer('pointerup', dragged, 80, 90, {pointerType: 'touch'});
+    drag.click(dragged);
+    await flush(); assert.equal(drag.viewer.open, false);
+    // A subsequent deliberate tap must not inherit suppression from the drag.
+    drag.pointer('pointerdown', dragged); drag.pointer('pointerup', dragged);
+    await flush(); assert.equal(drag.viewer.open, true);
+    drag.finishAnimations(); await flush();
+});
+
+test('losing the map capture or cancelling a touch ends the gesture without opening a photo', async () => {
+    for (const type of ['lostpointercapture', 'pointercancel']) {
+        const s = setup(), tile = s.plane.children[0];
+        s.pointer('pointerdown', tile);
+        s.pointer(type, tile, 30, 30, {target: s.map});
+        s.click(tile); await flush();
+        assert.equal(s.viewer.open, false);
+        const stopped = s.plane.style.transform;
+        s.tick(); assert.notEqual(s.plane.style.transform, stopped);
+    }
 });
 
 test('browser Back during opening and Forward during closing cancel stale completion', async () => {

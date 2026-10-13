@@ -447,6 +447,7 @@ if (photoMap && mapPlane && photoViewer) {
     let panX = 0;
     let panY = 0;
     let pointer = null;
+    let suppressPointerClick = false;
     let mapVisible = false;
     let paused = motionPreference.matches;
     let resumeAt = 0;
@@ -762,17 +763,19 @@ if (photoMap && mapPlane && photoViewer) {
     });
 
     photoMap.addEventListener("pointerdown", (event) => {
-        if (!event.isPrimary || event.button !== 0 || pointer || isAnimating) return;
+        if (!event.isPrimary || event.button !== 0 || pointer || photoViewer.open) return;
+        suppressPointerClick = false;
         pointer = {
             id: event.pointerId, x: event.clientX, y: event.clientY,
             startX: event.clientX, startY: event.clientY, moved: false,
+            dragThreshold: event.pointerType === "touch" ? 14 : 8,
             tile: event.target.closest(".photo-map-tile")
         };
         photoMap.setPointerCapture(event.pointerId);
     });
     photoMap.addEventListener("pointermove", (event) => {
         if (!pointer || pointer.id !== event.pointerId) return;
-        if (!pointer.moved && Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) > 8) {
+        if (!pointer.moved && Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) > pointer.dragThreshold) {
             pointer.moved = true;
             photoMap.classList.add("is-dragging");
         }
@@ -787,6 +790,7 @@ if (photoMap && mapPlane && photoViewer) {
         if (!pointer || pointer.id !== event.pointerId) return;
         const ended = pointer;
         pointer = null;
+        suppressPointerClick = ended.moved || event.type !== "pointerup";
         photoMap.classList.remove("is-dragging");
         resumeAt = 0;
         if (photoMap.hasPointerCapture(event.pointerId)) photoMap.releasePointerCapture(event.pointerId);
@@ -796,16 +800,25 @@ if (photoMap && mapPlane && photoViewer) {
     }
     photoMap.addEventListener("pointerup", endPointer);
     photoMap.addEventListener("pointercancel", endPointer);
-    photoMap.addEventListener("lostpointercapture", endPointer);
+    photoMap.addEventListener("lostpointercapture", (event) => {
+        // Touch implicitly captures to the tile first. Its capture-loss event
+        // bubbles here when capture moves to the map; that is not a cancellation.
+        if (event.target === photoMap) endPointer(event);
+    });
     photoMap.addEventListener("dragstart", (event) => event.preventDefault());
     photoMap.addEventListener("focusin", () => {
         keyboardFocus = photoMap.matches(":focus-visible");
     });
     photoMap.addEventListener("focusout", () => { keyboardFocus = false; });
-    // Keyboard / assistive-technology activation does not produce pointer events.
+    // Native clicks also cover browsers that do not complete the pointer path.
+    // Keep keyboard activation, but suppress the click synthesized after a drag.
     photoMap.addEventListener("click", (event) => {
         const tile = event.target.closest(".photo-map-tile");
-        if (event.detail === 0 && tile) openPhoto(Number(tile.dataset.photo), tile);
+        if (event.detail !== 0 && suppressPointerClick) {
+            event.preventDefault();
+            return;
+        }
+        if (tile) openPhoto(Number(tile.dataset.photo), tile);
     });
     photoMap.addEventListener("keydown", (event) => {
         const movement = {ArrowLeft: [90, 0], ArrowRight: [-90, 0], ArrowUp: [0, 90], ArrowDown: [0, -90]};
