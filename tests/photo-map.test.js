@@ -169,6 +169,7 @@ test('visible photos move continuously across cell rebases and torus wrapping', 
 test('open and close animate rotation, scale and crop while the map keeps drifting', async () => {
     const s = setup(), tile = s.plane.children.find(button => button.dataset.photo === 13);
     s.pointer('pointerdown', tile); s.pointer('pointerup', tile);
+    s.click(tile);
     await flush();
     assert.equal(s.viewer.open, true);
     assert.match(s.elements.viewerImage.src, /thumbs\/img13.webp$/);
@@ -202,6 +203,7 @@ test('a bubbled capture loss from the touched tile must not cancel the map gestu
     const held = s.plane.style.transform;
     s.tick(); assert.equal(s.plane.style.transform, held);
     s.pointer('pointerup', tile, 30, 30, {pointerType: 'touch'});
+    s.click(tile);
     await flush();
     assert.equal(s.viewer.open, true);
     s.finishAnimations(); await flush();
@@ -217,11 +219,48 @@ test('native mouse and touch clicks also open photos when the pointer path is un
     }
 });
 
+test('an Android tap keeps its native target and opens only after the synthesized click', async () => {
+    const s = setup(), tile = s.plane.children[0];
+    s.pointer('pointerdown', tile, 30, 30, {pointerType: 'touch'});
+    assert.equal(s.map.capture, undefined, 'tapping must not transfer capture away from the button');
+    s.pointer('pointerup', tile, 30, 30, {pointerType: 'touch'});
+    await flush();
+    assert.equal(s.viewer.open, false, 'do not insert a modal between pointerup and click');
+    s.pointer('lostpointercapture', tile, 30, 30, {target: tile});
+    s.click(tile); await flush();
+    assert.equal(s.viewer.open, true);
+    assert.equal(s.history.state.lovePhoto, tile.dataset.photo);
+    s.finishAnimations(); await flush();
+});
+
+test('capture starts only after dragging and a missed pointerup cannot turn a drag into a tap', async () => {
+    const s = setup(), tile = s.plane.children[0];
+    s.pointer('pointerdown', tile, 30, 30, {pointerType: 'touch'});
+    assert.equal(s.map.capture, undefined);
+    s.pointer('pointermove', tile, 80, 90, {pointerType: 'touch'});
+    assert.equal(s.map.capture, 1);
+    s.pointer('lostpointercapture', tile, 80, 90, {target: tile});
+    s.click(tile); await flush();
+    assert.equal(s.viewer.open, false);
+    const held = s.plane.style.transform;
+    s.tick(); assert.notEqual(s.plane.style.transform, held);
+});
+
+test('window pointerup clears an uncaptured release outside the map', () => {
+    const s = setup(), tile = s.plane.children[0];
+    s.pointer('pointerdown', tile);
+    const held = s.plane.style.transform;
+    s.tick(); assert.equal(s.plane.style.transform, held);
+    s.windowEvents.pointerup({pointerId: 1, type: 'pointerup'});
+    s.tick(); assert.notEqual(s.plane.style.transform, held);
+});
+
 test('small touch jitter counts as a tap, but a drag must not open on its following click', async () => {
     const tap = setup(), tile = tap.plane.children[0];
     tap.pointer('pointerdown', tile, 30, 30, {pointerType: 'touch'});
     tap.pointer('pointermove', tile, 40, 34, {pointerType: 'touch'});
     tap.pointer('pointerup', tile, 40, 34, {pointerType: 'touch'});
+    tap.click(tile);
     await flush(); assert.equal(tap.viewer.open, true);
     tap.finishAnimations(); await flush();
 
@@ -233,6 +272,7 @@ test('small touch jitter counts as a tap, but a drag must not open on its follow
     await flush(); assert.equal(drag.viewer.open, false);
     // A subsequent deliberate tap must not inherit suppression from the drag.
     drag.pointer('pointerdown', dragged); drag.pointer('pointerup', dragged);
+    drag.click(dragged);
     await flush(); assert.equal(drag.viewer.open, true);
     drag.finishAnimations(); await flush();
 });
@@ -252,6 +292,7 @@ test('losing the map capture or cancelling a touch ends the gesture without open
 test('browser Back during opening and Forward during closing cancel stale completion', async () => {
     const s = setup(), tile = s.plane.children[0];
     s.pointer('pointerdown', tile); s.pointer('pointerup', tile);
+    s.click(tile);
     await flush();
     s.history.back(); await flush();
     s.windowEvents.popstate({state: {lovePhoto: 2}}); await flush();
@@ -268,6 +309,7 @@ test('resize while viewing returns to a connected tile and reduced motion skips 
     const before = s.plane.style.transform;
     s.tick(); assert.equal(s.plane.style.transform, before);
     s.pointer('pointerdown', original); s.pointer('pointerup', original);
+    s.click(original);
     await flush(); s.finishAnimations(); await flush();
     assert.equal(s.animations.every(animation => animation.options.duration === 0), true);
     s.resize(1600, 1000);

@@ -448,6 +448,7 @@ if (photoMap && mapPlane && photoViewer) {
     let panY = 0;
     let pointer = null;
     let suppressPointerClick = false;
+    let pendingTapTile = null;
     let mapVisible = false;
     let paused = motionPreference.matches;
     let resumeAt = 0;
@@ -765,19 +766,22 @@ if (photoMap && mapPlane && photoViewer) {
     photoMap.addEventListener("pointerdown", (event) => {
         if (!event.isPrimary || event.button !== 0 || pointer || photoViewer.open) return;
         suppressPointerClick = false;
+        pendingTapTile = null;
         pointer = {
             id: event.pointerId, x: event.clientX, y: event.clientY,
             startX: event.clientX, startY: event.clientY, moved: false,
             dragThreshold: event.pointerType === "touch" ? 14 : 8,
             tile: event.target.closest(".photo-map-tile")
         };
-        photoMap.setPointerCapture(event.pointerId);
+        // Leave taps on the native button. Capturing here retargets Android's
+        // eventual click to the map instead of the photo that was touched.
     });
     photoMap.addEventListener("pointermove", (event) => {
         if (!pointer || pointer.id !== event.pointerId) return;
         if (!pointer.moved && Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) > pointer.dragThreshold) {
             pointer.moved = true;
             photoMap.classList.add("is-dragging");
+            photoMap.setPointerCapture(event.pointerId);
         }
         if (pointer.moved) {
             moveMap(event.clientX - pointer.x, event.clientY - pointer.y);
@@ -791,15 +795,19 @@ if (photoMap && mapPlane && photoViewer) {
         const ended = pointer;
         pointer = null;
         suppressPointerClick = ended.moved || event.type !== "pointerup";
+        pendingTapTile = suppressPointerClick ? null : ended.tile;
         photoMap.classList.remove("is-dragging");
         resumeAt = 0;
         if (photoMap.hasPointerCapture(event.pointerId)) photoMap.releasePointerCapture(event.pointerId);
-        if (event.type === "pointerup" && !ended.moved && ended.tile) {
-            openPhoto(Number(ended.tile.dataset.photo), ended.tile);
-        }
+        // Opening on pointerup can change the hit target before the browser
+        // dispatches click. Let that click activate the photo exactly once.
     }
     photoMap.addEventListener("pointerup", endPointer);
     photoMap.addEventListener("pointercancel", endPointer);
+    // Mouse releases outside the map still need to clear the held gesture when
+    // it has not moved far enough to start capturing a drag.
+    window.addEventListener("pointerup", endPointer);
+    window.addEventListener("pointercancel", endPointer);
     photoMap.addEventListener("lostpointercapture", (event) => {
         // Touch implicitly captures to the tile first. Its capture-loss event
         // bubbles here when capture moves to the map; that is not a cancellation.
@@ -810,15 +818,23 @@ if (photoMap && mapPlane && photoViewer) {
         keyboardFocus = photoMap.matches(":focus-visible");
     });
     photoMap.addEventListener("focusout", () => { keyboardFocus = false; });
-    // Native clicks also cover browsers that do not complete the pointer path.
-    // Keep keyboard activation, but suppress the click synthesized after a drag.
+    // Use one native activation path for touch, mouse, keyboard and assistive
+    // technology. Only actual drags and cancelled gestures suppress a click.
     photoMap.addEventListener("click", (event) => {
-        const tile = event.target.closest(".photo-map-tile");
-        if (event.detail !== 0 && suppressPointerClick) {
+        const tile = event.target.closest(".photo-map-tile") ||
+            (event.detail !== 0 ? pendingTapTile : null);
+        pendingTapTile = null;
+        if (event.detail !== 0 && (suppressPointerClick || pointer?.moved)) {
+            if (pointer) endPointer({pointerId: pointer.id, type: "pointercancel"});
             event.preventDefault();
             return;
         }
-        if (tile) openPhoto(Number(tile.dataset.photo), tile);
+        if (tile) {
+            // A native click can arrive even when a browser omitted pointerup.
+            if (pointer) endPointer({pointerId: pointer.id, type: "pointerup"});
+            pendingTapTile = null;
+            openPhoto(Number(tile.dataset.photo), tile);
+        }
     });
     photoMap.addEventListener("keydown", (event) => {
         const movement = {ArrowLeft: [90, 0], ArrowRight: [-90, 0], ArrowUp: [0, 90], ArrowDown: [0, -90]};
