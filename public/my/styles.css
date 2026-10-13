@@ -565,6 +565,7 @@ p {
     width: 0;
     height: 0;
     transform: rotate(-16deg);
+    will-change: transform;
 }
 
 .photo-map-tile {
@@ -589,6 +590,10 @@ p {
     object-fit: cover;
     border-radius: 21px;
     pointer-events: none;
+}
+
+.photo-map-tile.is-viewer-source img {
+    visibility: hidden;
 }
 
 .photo-map-tile:hover {
@@ -689,7 +694,7 @@ p {
     margin: 0;
     padding: 80px 24px 56px;
     border: 0;
-    background: #171316f5;
+    background: #171316b8;
     color: #fffaf5;
     overflow: hidden;
     touch-action: pinch-zoom;
@@ -704,7 +709,7 @@ p {
 }
 
 .photo-viewer::backdrop {
-    background: #171316;
+    background: transparent;
 }
 
 .viewer-close {
@@ -723,6 +728,13 @@ p {
     flex-shrink: 0;
     object-fit: contain;
     border-radius: 26px;
+    transform-origin: center;
+}
+
+.photo-viewer.is-transitioning #viewerImage {
+    will-change: transform, clip-path;
+    /* The animated crop supplies the corner radius during the flight. */
+    border-radius: 0;
 }
 
 #viewerCaption {

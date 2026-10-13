@@ -454,6 +454,27 @@ if (photoMap && mapPlane && photoViewer) {
     let lastFrameTime = 0;
     let returnFocus = photoMap;
     let closingViewer = false;
+    let gridX = NaN;
+    let gridY = NaN;
+    let keyboardFocus = false;
+    let viewerGeneration = 0;
+    let viewerAnimations = [];
+    let transitionTile = null;
+    let activePhoto = 0;
+    let viewerRect = null;
+    const viewerClose = document.getElementById("viewerClose");
+    const driftSpeed = 9;
+    const openDuration = 480;
+    const closeDuration = 380;
+    const fullImageFrame = {
+        transform: "translate3d(0px, 0px, 0) rotate(0deg) scale(1)",
+        clipPath: "inset(0px 0px round 26px)", opacity: 1
+    };
+
+    function mapIsMoving(now = performance.now()) {
+        return !paused && !motionPreference.matches && !pointer && now >= resumeAt &&
+            (!keyboardFocus || photoViewer.open);
+    }
 
     function moveMap(screenX, screenY) {
         // Convert screen movement into the rotated grid's coordinates.
@@ -461,21 +482,36 @@ if (photoMap && mapPlane && photoViewer) {
         panY += -screenX * sin + screenY * cos;
     }
 
-    function drawMap() {
+    function tilePosition(tile, secondsAhead = 0) {
+        const width = columns * stepX;
+        const height = rows * stepY;
+        const advance = mapIsMoving() ? driftSpeed * secondsAhead : 0;
+        return {
+            x: wrap(tile.column * stepX + panX + advance * (cos + sin), width) - width / 2,
+            y: wrap(tile.row * stepY - (tile.column % 5) * stepY / 5 + panY +
+                advance * (cos - sin), height) - height / 2
+        };
+    }
+
+    function drawMap(force = false) {
         const width = columns * stepX;
         const height = rows * stepY;
         panX = wrap(panX, width);
         panY = wrap(panY, height);
-        for (const tile of tiles) {
-            const x = wrap(tile.column * stepX + panX, width) - width / 2;
-            // Raise each successive column; include the offset in the wrap so
-            // the stagger stays seamless as photos travel around the map.
-            const columnOffset = -(tile.column % 5) * stepY / 5;
-            const y = wrap(tile.row * stepY + columnOffset + panY, height) - height / 2;
-            tile.x = x;
-            tile.y = y;
-            tile.button.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        const nextX = Math.floor(panX / stepX) * stepX;
+        const nextY = Math.floor(panY / stepY) * stepY;
+        // Most frames change just one composited layer. Reposition the tiles
+        // only when crossing a cell boundary, with wrapping outside the view.
+        if (force || nextX !== gridX || nextY !== gridY) {
+            gridX = nextX;
+            gridY = nextY;
+            for (const tile of tiles) {
+                const x = wrap(tile.column * stepX + gridX, width) - width / 2;
+                const y = wrap(tile.row * stepY - (tile.column % 5) * stepY / 5 + gridY, height) - height / 2;
+                tile.button.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+            }
         }
+        mapPlane.style.transform = `rotate(-16deg) translate3d(${panX - gridX}px, ${panY - gridY}px, 0)`;
     }
 
     function layoutMap() {
@@ -506,19 +542,20 @@ if (photoMap && mapPlane && photoViewer) {
                     button.tabIndex = -1;
                     button.setAttribute("aria-label", `Open photo ${photo} of ${imageCount} of Dariela and Dejan`);
                     const img = document.createElement("img");
-                    img.src = `/img/gallery/img${photo}.jpg`;
+                    img.src = `/img/gallery/thumbs/img${photo}.webp`;
                     img.alt = "Dariela and Dejan together";
                     img.loading = "lazy";
                     img.decoding = "async";
                     img.draggable = false;
                     button.appendChild(img);
                     fragment.appendChild(button);
-                    tiles.push({button, column, row, photo});
+                    tiles.push({button, img, column, row, photo});
                 }
             }
             mapPlane.replaceChildren(fragment);
         }
-        drawMap();
+        drawMap(true);
+        if (photoViewer.open && !closingViewer && !viewerAnimations.length) fitViewerImage();
     }
 
     function animateMap(now) {
@@ -526,9 +563,8 @@ if (photoMap && mapPlane && photoViewer) {
         if (!mapVisible || document.hidden) return;
         const elapsed = Math.min((now - lastFrameTime) / 1000, 0.05);
         lastFrameTime = now;
-        if (!paused && !motionPreference.matches && !pointer && !photoViewer.open &&
-            now > resumeAt && !photoMap.matches(":focus-visible")) {
-            moveMap(elapsed * 9, elapsed * 9);
+        if (mapIsMoving(now)) {
+            moveMap(elapsed * driftSpeed, elapsed * driftSpeed);
             drawMap();
         }
         mapFrame = requestAnimationFrame(animateMap);
@@ -540,14 +576,159 @@ if (photoMap && mapPlane && photoViewer) {
         mapFrame = requestAnimationFrame(animateMap);
     }
 
-    function showPhoto(photo, focusTarget = photoMap) {
+    function findPhotoTile(photo, preferred = returnFocus) {
+        const mapRect = photoMap.getBoundingClientRect();
+        const distance = (tile) => {
+            const {x, y} = tilePosition(tile);
+            const dx = (x + (stepX - 22) / 2) * cos - (y + (stepY - 22) / 2) * sin;
+            const dy = (x + (stepX - 22) / 2) * sin + (y + (stepY - 22) / 2) * cos;
+            return {visible: Math.abs(dx) < mapRect.width / 2 && Math.abs(dy) < mapRect.height / 2,
+                value: Math.hypot(dx, dy)};
+        };
+        const matches = tiles.filter(tile => tile.photo === photo);
+        const original = matches.find(tile => tile.button === preferred);
+        if (original && distance(original).visible) return original;
+        return matches.reduce((best, tile) => {
+            const a = distance(tile), b = best && distance(best);
+            return !b || (a.visible && !b.visible) || (a.visible === b.visible && a.value < b.value) ? tile : best;
+        }, null);
+    }
+
+    function fitViewerImage() {
+        if (!viewerImage.naturalWidth || !photoViewer.open) return;
+        const style = getComputedStyle(photoViewer);
+        const availableWidth = photoViewer.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        const availableHeight = photoViewer.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) -
+            viewerCaption.offsetHeight - 14;
+        const ratio = viewerImage.naturalWidth / viewerImage.naturalHeight;
+        const width = Math.max(1, Math.min(availableWidth, availableHeight * ratio));
+        viewerImage.style.width = `${width}px`;
+        viewerImage.style.height = `${width / ratio}px`;
+        viewerRect = viewerImage.getBoundingClientRect();
+    }
+
+    function tileFrame(tile, secondsAhead = 0) {
+        if (!tile || !viewerRect) return {...fullImageFrame, opacity: 0};
+        const mapRect = photoMap.getBoundingClientRect();
+        const {x, y} = tilePosition(tile, secondsAhead);
+        const tileWidth = stepX - 22, tileHeight = stepY - 22;
+        const centerX = mapRect.left + mapRect.width / 2 + (x + tileWidth / 2) * cos - (y + tileHeight / 2) * sin;
+        const centerY = mapRect.top + mapRect.height / 2 + (x + tileWidth / 2) * sin + (y + tileHeight / 2) * cos;
+        // Uniform scaling plus a changing crop preserves the photo's proportions
+        // while it changes from the map's portrait crop to the full photograph.
+        const scale = Math.max((tileWidth - 10) / viewerRect.width, (tileHeight - 10) / viewerRect.height);
+        const insetX = Math.max(0, (viewerRect.width - (tileWidth - 10) / scale) / 2);
+        const insetY = Math.max(0, (viewerRect.height - (tileHeight - 10) / scale) / 2);
+        return {
+            transform: `translate3d(${centerX - viewerRect.left - viewerRect.width / 2}px, ${centerY - viewerRect.top - viewerRect.height / 2}px, 0) rotate(-16deg) scale(${scale})`,
+            clipPath: `inset(${insetY}px ${insetX}px round ${21 / scale}px)`, opacity: 1
+        };
+    }
+
+    function stopViewerAnimations() {
+        viewerAnimations.forEach(animation => animation.cancel());
+        viewerAnimations = [];
+        transitionTile?.button.classList.remove("is-viewer-source");
+        transitionTile = null;
+        photoViewer.classList.remove("is-transitioning");
+    }
+
+    function animateViewer(element, frames, duration) {
+        const animation = element.animate(frames, {
+            duration, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "both"
+        });
+        // Cancellation (Back during opening, or Forward during closing) is normal.
+        animation.finished.catch(() => {});
+        viewerAnimations.push(animation);
+        return animation;
+    }
+
+    async function showPhoto(photo, focusTarget = photoMap) {
+        const generation = ++viewerGeneration;
+        stopViewerAnimations();
         returnFocus = focusTarget;
         closingViewer = false;
-        viewerImage.src = `/img/gallery/img${photo}.jpg`;
+        activePhoto = photo;
+        viewerRect = null;
+        resumeAt = 0;
+        const tile = findPhotoTile(photo, focusTarget);
+        // Begin with the cached preview; decode the original off-screen and swap
+        // it in after the flight, without changing the image's fitted dimensions.
+        viewerImage.style.visibility = "hidden";
+        viewerImage.src = tile?.img.currentSrc || tile?.img.src || `/img/gallery/img${photo}.jpg`;
         viewerImage.alt = `Photo ${photo} of Dariela and Dejan together`;
         viewerCaption.textContent = `${photo} / ${imageCount} · Our little world ❤️`;
         if (!photoViewer.open) photoViewer.showModal();
-        document.getElementById("viewerClose").focus({preventScroll: true});
+        viewerClose.focus({preventScroll: true});
+        const fullImage = new Image();
+        fullImage.src = `/img/gallery/img${photo}.jpg`;
+        const fullReady = fullImage.decode().then(() => fullImage).catch(() => null);
+        const duration = motionPreference.matches ? 0 : openDuration;
+        photoViewer.classList.add("is-transitioning");
+        animateViewer(photoViewer, [{backgroundColor: "#17131600"}, {backgroundColor: "#171316b8"}], duration);
+        animateViewer(viewerClose, [{opacity: 0}, {opacity: 1}], duration);
+        animateViewer(viewerCaption, [{opacity: 0}, {opacity: 1}], duration);
+        await viewerImage.decode().catch(() => {});
+        if (generation !== viewerGeneration) return;
+        // If a preview cannot load, the original can still open normally.
+        if (!viewerImage.naturalWidth) {
+            const original = await fullReady;
+            if (generation !== viewerGeneration) return;
+            if (original) {
+                viewerImage.src = original.src;
+                await viewerImage.decode().catch(() => {});
+                if (generation !== viewerGeneration) return;
+            }
+        }
+        fitViewerImage();
+        const canFly = mapVisible && !isAnimating && tile && viewerRect;
+        if (canFly && duration) {
+            transitionTile = tile;
+            tile.button.classList.add("is-viewer-source");
+        }
+        viewerImage.style.visibility = "";
+        animateViewer(viewerImage, [canFly ? tileFrame(tile) : {...fullImageFrame, opacity: 0}, fullImageFrame], duration);
+        await Promise.all(viewerAnimations.map(animation => animation.finished.catch(() => {})));
+        if (generation !== viewerGeneration) return;
+        stopViewerAnimations();
+        fitViewerImage();
+        const original = await fullReady;
+        if (generation === viewerGeneration && photoViewer.open && original) viewerImage.src = original.src;
+    }
+
+    async function finishPhotoClose() {
+        const imageStyle = getComputedStyle(viewerImage);
+        const from = {
+            transform: imageStyle.transform === "none" ? fullImageFrame.transform : imageStyle.transform,
+            clipPath: imageStyle.clipPath === "none" ? fullImageFrame.clipPath : imageStyle.clipPath,
+            opacity: imageStyle.opacity
+        };
+        const backgroundColor = getComputedStyle(photoViewer).backgroundColor;
+        const closeOpacity = getComputedStyle(viewerClose).opacity;
+        const captionOpacity = getComputedStyle(viewerCaption).opacity;
+        const generation = ++viewerGeneration;
+        closingViewer = true;
+        stopViewerAnimations();
+        const duration = motionPreference.matches ? 0 : closeDuration;
+        const tile = findPhotoTile(activePhoto);
+        if (tile && viewerRect && duration) {
+            transitionTile = tile;
+            tile.button.classList.add("is-viewer-source");
+        }
+        photoViewer.classList.add("is-transitioning");
+        animateViewer(viewerImage, [from, tileFrame(tile, duration / 1000)], duration);
+        animateViewer(photoViewer, [{backgroundColor}, {backgroundColor: "#17131600"}], duration);
+        animateViewer(viewerClose, [{opacity: closeOpacity}, {opacity: 0}], duration);
+        animateViewer(viewerCaption, [{opacity: captionOpacity}, {opacity: 0}], duration);
+        await Promise.all(viewerAnimations.map(animation => animation.finished.catch(() => {})));
+        if (generation !== viewerGeneration) return;
+        photoViewer.close();
+        stopViewerAnimations();
+        closingViewer = false;
+        resumeAt = 0;
+        const target = (tile?.button.isConnected ? tile.button : findPhotoTile(activePhoto)?.button) ||
+            (returnFocus.isConnected ? returnFocus : photoMap);
+        target.focus({preventScroll: true});
     }
 
     function openPhoto(photo, focusTarget) {
@@ -568,14 +749,10 @@ if (photoMap && mapPlane && photoViewer) {
             scrollToIndex(slides.length - 1);
             showPhoto(photo);
         } else if (photoViewer.open) {
-            photoViewer.close();
-            closingViewer = false;
-            resumeAt = performance.now() + 3000;
-            const target = returnFocus.isConnected ? returnFocus : photoMap;
-            target.focus({preventScroll: true});
+            finishPhotoClose();
         }
     });
-    document.getElementById("viewerClose").addEventListener("click", closePhoto);
+    viewerClose.addEventListener("click", closePhoto);
     photoViewer.addEventListener("cancel", (event) => {
         event.preventDefault();
         closePhoto();
@@ -621,6 +798,10 @@ if (photoMap && mapPlane && photoViewer) {
     photoMap.addEventListener("pointercancel", endPointer);
     photoMap.addEventListener("lostpointercapture", endPointer);
     photoMap.addEventListener("dragstart", (event) => event.preventDefault());
+    photoMap.addEventListener("focusin", () => {
+        keyboardFocus = photoMap.matches(":focus-visible");
+    });
+    photoMap.addEventListener("focusout", () => { keyboardFocus = false; });
     // Keyboard / assistive-technology activation does not produce pointer events.
     photoMap.addEventListener("click", (event) => {
         const tile = event.target.closest(".photo-map-tile");
@@ -635,9 +816,11 @@ if (photoMap && mapPlane && photoViewer) {
             resumeAt = performance.now() + 3000;
         } else if (event.key === "Enter" && event.target === photoMap) {
             event.preventDefault();
-            const nearest = tiles.reduce((best, tile) =>
-                Math.hypot(tile.x + stepX / 2, tile.y + stepY / 2) <
-                Math.hypot(best.x + stepX / 2, best.y + stepY / 2) ? tile : best);
+            const distance = (tile) => {
+                const {x, y} = tilePosition(tile);
+                return Math.hypot(x + (stepX - 22) / 2, y + (stepY - 22) / 2);
+            };
+            const nearest = tiles.reduce((best, tile) => distance(tile) < distance(best) ? tile : best);
             openPhoto(nearest.photo, photoMap);
         }
     });
