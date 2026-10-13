@@ -155,9 +155,9 @@ test('visible photos move continuously across cell rebases and torus wrapping', 
             const current = positions();
             previous.forEach((before, index) => {
                 if (Math.abs(before.x) < width / 2 && Math.abs(before.y) < 844 / 2) {
-                    assert.ok(Math.abs(current[index].x - before.x - 9 * .016) < 1e-7,
+                    assert.ok(Math.abs(current[index].x - before.x - 10.35 * .016) < 1e-7,
                         JSON.stringify({width, i, index, before, after: current[index], plane: s.plane.style.transform}));
-                    assert.ok(Math.abs(current[index].y - before.y - 9 * .016) < 1e-7);
+                    assert.ok(Math.abs(current[index].y - before.y - 10.35 * .016) < 1e-7);
                 }
             });
             previous = current;
