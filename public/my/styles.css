@@ -535,39 +535,241 @@ p {
     margin-top: 8px;
 }
 
-/* ---------- Auto sliding gallery ---------- */
-.gallery {
-    width: min(880px, 100%);
-    min-width: 0;
-    margin-top: 10px;
+/* ---------- Full-page diagonal photo map ---------- */
+.memories-slide {
+    position: relative;
+    isolation: isolate;
+    padding: 0;
+    background: #eee5df;
+}
+
+.photo-map {
+    position: absolute;
+    inset: 0;
     overflow: hidden;
-    border-radius: 22px;
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.14);
+    touch-action: pinch-zoom;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: grab;
 }
 
-.gallery-track {
-    display: flex;
-    gap: 14px;
-    padding: 14px;
-    width: max-content;
-    animation: galleryScroll 26s linear infinite;
+.photo-map.is-dragging,
+.photo-map.is-dragging .photo-map-tile {
+    cursor: grabbing;
 }
 
-.gallery img {
-    height: min(calc(var(--viewport-unit, 1vh) * 54), 360px);
-    max-width: 72vw;
-    width: auto;
-    aspect-ratio: 3 / 4;
+.photo-map-plane {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    transform: rotate(-16deg);
+}
+
+.photo-map-tile {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--tile-width);
+    height: var(--tile-height);
+    padding: 5px;
+    border: 0;
+    border-radius: 26px;
+    background: #fffaf5;
+    box-shadow: 0 8px 24px #39291e26;
+    cursor: grab;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.photo-map-tile img {
+    display: block;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border-radius: 18px;
+    border-radius: 21px;
+    pointer-events: none;
 }
 
-@keyframes galleryScroll {
-    from {
-        transform: translateX(0);
+.photo-map-tile:hover {
+    box-shadow: 0 10px 30px #39291e55;
+}
+
+.photo-map:focus-visible {
+    outline: 3px solid #9e345d;
+    outline-offset: -5px;
+}
+
+.map-control:focus-visible,
+.photo-map-tile:focus-visible {
+    outline: 3px solid #9e345d;
+    outline-offset: 4px;
+}
+
+.memories-header,
+.memories-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    text-align: center;
+    pointer-events: none;
+    color: #392b30;
+}
+
+.memories-header {
+    top: 0;
+    padding: max(18px, env(safe-area-inset-top)) 20px 65px;
+    background: linear-gradient(#fff5eedb 55%, #fff5ee00);
+}
+
+.memories-header h2 {
+    font-size: clamp(32px, 6vw, 52px);
+    font-weight: 400;
+    margin: 16px 0 4px;
+    text-shadow: 0 2px 16px #fff;
+}
+
+.memories-header p {
+    font-size: 14px;
+    margin: 0;
+}
+
+.memories-footer {
+    bottom: 0;
+    padding: 65px 16px max(16px, env(safe-area-inset-bottom));
+    background: linear-gradient(#fff5ee00, #fff5eef2 55%);
+}
+
+.memories-note {
+    font-size: clamp(26px, 5vw, 36px);
+    margin: 0 0 6px;
+}
+
+#mapHint {
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0 0 10px;
+}
+
+.map-keyboard-hint {
+    font-size: 11px;
+}
+
+.map-control {
+    min-height: 44px;
+    padding: 10px 18px;
+    border: 1px solid #65485133;
+    border-radius: 999px;
+    background: #fffaf5ed;
+    color: #49333d;
+    font: 600 13px system-ui, sans-serif;
+    box-shadow: 0 3px 14px #39291e12;
+    cursor: pointer;
+    pointer-events: auto;
+    touch-action: manipulation;
+}
+
+.map-control:hover {
+    background: #fff;
+}
+
+.map-control:disabled {
+    cursor: default;
+    opacity: 0.7;
+}
+
+.photo-viewer {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 80px 24px 56px;
+    border: 0;
+    background: #171316f5;
+    color: #fffaf5;
+    overflow: hidden;
+    touch-action: pinch-zoom;
+}
+
+.photo-viewer[open] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+.photo-viewer::backdrop {
+    background: #171316;
+}
+
+.viewer-close {
+    position: absolute;
+    top: max(18px, env(safe-area-inset-top));
+    left: max(18px, env(safe-area-inset-left));
+}
+
+#viewerImage {
+    display: block;
+    min-height: 0;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: calc(100% - 32px);
+    flex-shrink: 0;
+    object-fit: contain;
+    border-radius: 26px;
+}
+
+#viewerCaption {
+    flex-shrink: 0;
+    font-size: 13px;
+    margin: 0;
+    text-align: center;
+    color: #e4d6db;
+}
+
+@media (pointer: coarse) {
+    .map-keyboard-hint {
+        display: none;
     }
-    to {
-        transform: translateX(-50%);
+}
+
+@media (max-height: 500px) {
+    .memories-header {
+        padding-bottom: 26px;
+        text-align: right;
+    }
+
+    .memories-header > .map-control {
+        float: left;
+    }
+
+    .memories-header h2 {
+        font-size: 28px;
+        margin: 0;
+    }
+
+    .memories-footer {
+        padding-top: 26px;
+    }
+
+    .memories-note,
+    .map-keyboard-hint {
+        display: none;
+    }
+
+    #mapHint {
+        display: inline-block;
+        margin: 0 14px 0 0;
+    }
+
+    .photo-viewer {
+        padding: 66px 16px 16px;
     }
 }
 
@@ -579,9 +781,6 @@ p {
         filter: none;
     }
 
-    .gallery-track {
-        animation: none;
-    }
 }
 
 /* ---------- Per-page hero-style photo ---------- */
@@ -621,13 +820,6 @@ p {
         font-size: 11px;
     }
 
-    .gallery {
-        margin-top: 2px;
-    }
-
-    .gallery-track {
-        padding: 8px;
-    }
 }
 
 @media (max-height: 500px) {
@@ -635,7 +827,4 @@ p {
         height: min(calc(var(--viewport-unit, 1vh) * 25), 190px);
     }
 
-    .gallery img {
-        height: min(calc(var(--viewport-unit, 1vh) * 42), 240px);
-    }
 }

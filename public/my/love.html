@@ -134,20 +134,29 @@
     </section>
 
     <!-- Slide 5 -->
-    <section class="slide" data-once="true">
-        <div class="content center-stack">
-            <h2 class="fancy big anim line-1">Still not convinced?</h2>
-            <p class="lead anim line-2">Ok. Here, look at more pictures of us.</p>
-
-            <div class="gallery anim line-3" aria-label="Photo gallery">
-                <div class="gallery-track" id="galleryTrack"></div>
-            </div>
-
-
-            <p class="small anim line-4">I love her so much 🥰</p>
+    <section class="slide memories-slide" data-once="true" aria-labelledby="memoriesTitle">
+        <div class="photo-map" id="photoMap" tabindex="0" role="region"
+             aria-label="Draggable map of our photos" aria-describedby="mapHint" data-slide-gesture="ignore">
+            <div class="photo-map-plane" id="photoMapPlane"></div>
         </div>
+        <header class="memories-header">
+            <button class="map-control" id="memoriesBack" type="button" data-slide-gesture="ignore">↑ Previous page</button>
+            <h2 class="fancy" id="memoriesTitle">Still not convinced?</h2>
+            <p>Here, get lost in our little world.</p>
+        </header>
+        <footer class="memories-footer">
+            <p class="fancy memories-note">I love her so much 🥰</p>
+            <p id="mapHint">Drag to explore · Tap a photo to open<br><span class="map-keyboard-hint">Arrow keys to explore · Enter to open · Page Up for the previous page</span></p>
+            <button class="map-control" id="mapMotion" type="button" aria-pressed="false" data-slide-gesture="ignore">Pause motion</button>
+        </footer>
     </section>
 </div>
+
+<dialog class="photo-viewer" id="photoViewer" aria-label="Enlarged photo" aria-describedby="viewerCaption">
+    <button class="viewer-close map-control" id="viewerClose" type="button">← Back to map</button>
+    <img id="viewerImage" alt=""/>
+    <p id="viewerCaption"></p>
+</dialog>
 
 <script src="script.js"></script>
 </body>

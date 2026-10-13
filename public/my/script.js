@@ -222,18 +222,25 @@ deck.addEventListener("wheel", (e) => {
 // Touch swipe -> one slide
 let touchStartY = 0;
 let touchStartX = 0;
+let slideTouchActive = false;
 
 deck.addEventListener("touchstart", (e) => {
+    slideTouchActive = false;
+    if (e.target.closest('[data-slide-gesture="ignore"]')) return;
     if (e.touches.length !== 1) return;
+    slideTouchActive = true;
     touchStartY = e.touches[0].clientY;
     touchStartX = e.touches[0].clientX;
 }, {passive: true});
 
 deck.addEventListener("touchmove", (e) => {
+    if (!slideTouchActive) return;
     if (e.touches.length === 1 && e.cancelable) e.preventDefault();
 }, {passive: false});
 
 deck.addEventListener("touchend", (e) => {
+    if (!slideTouchActive || e.touches.length !== 0) return;
+    slideTouchActive = false;
     if (isAnimating || inputLocked) return;
 
     const t = e.changedTouches[0];
@@ -250,12 +257,14 @@ deck.addEventListener("touchend", (e) => {
 }, {passive: true});
 
 deck.addEventListener("touchcancel", () => {
+    slideTouchActive = false;
     touchStartY = 0;
     touchStartX = 0;
 }, {passive: true});
 
 // Optional: keyboard navigation
 window.addEventListener("keydown", (e) => {
+    if (e.defaultPrevented || document.getElementById("photoViewer")?.open) return;
     if (isAnimating || inputLocked) return;
 
     if (e.key === "ArrowDown" || e.key === "PageDown") {
@@ -274,13 +283,16 @@ window.addEventListener("keydown", (e) => {
 let viewportResizeFrame = 0;
 
 function syncViewportHeight() {
+    // A rotation or browser-bar resize invalidates an in-flight scroll target.
+    cancelAnimationFrame(animationFrame);
+    isAnimating = false;
     const viewportHeight = Math.round(window.visualViewport?.height || window.innerHeight);
     document.documentElement.style.setProperty("--viewport-height", `${viewportHeight}px`);
     document.documentElement.style.setProperty("--viewport-unit", `${viewportHeight / 100}px`);
 
     cancelAnimationFrame(viewportResizeFrame);
     viewportResizeFrame = requestAnimationFrame(() => {
-        if (!isAnimating) deck.scrollTop = slides[activeIndex].offsetTop;
+        deck.scrollTop = slides[activeIndex].offsetTop;
         requestBgUpdate();
     });
 }
@@ -411,25 +423,257 @@ updateTimers();
 setInterval(updateTimers, 1000);
 
 
-const galleryTrack = document.getElementById("galleryTrack");
-const imageCount = 20;
-const extension = "jpg"; // change if needed
+// ---------- Endless diagonal photo map ----------
+const photoMap = document.getElementById("photoMap");
+const mapPlane = document.getElementById("photoMapPlane");
+const photoViewer = document.getElementById("photoViewer");
+const viewerImage = document.getElementById("viewerImage");
+const viewerCaption = document.getElementById("viewerCaption");
+const motionButton = document.getElementById("mapMotion");
 
-if (galleryTrack) {
-    for (let i = 1; i <= imageCount; i++) {
-        const img = document.createElement("img");
-        img.src = `/img/gallery/img${i}.${extension}`;
-        img.loading = "lazy";
-        img.alt = "Us";
-        galleryTrack.appendChild(img);
+if (photoMap && mapPlane && photoViewer) {
+    const imageCount = 20;
+    const angle = -16 * Math.PI / 180;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const wrap = (value, size) => ((value % size) + size) % size;
+    const historyKey = "lovePhoto";
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let tiles = [];
+    let columns = 0;
+    let rows = 0;
+    let stepX = 0;
+    let stepY = 0;
+    let panX = 0;
+    let panY = 0;
+    let pointer = null;
+    let mapVisible = false;
+    let paused = motionPreference.matches;
+    let resumeAt = 0;
+    let mapFrame = 0;
+    let lastFrameTime = 0;
+    let returnFocus = photoMap;
+    let closingViewer = false;
+
+    function moveMap(screenX, screenY) {
+        // Convert screen movement into the rotated grid's coordinates.
+        panX += screenX * cos + screenY * sin;
+        panY += -screenX * sin + screenY * cos;
     }
 
-    // duplicate for seamless scroll
-    for (let i = 1; i <= imageCount; i++) {
-        const img = document.createElement("img");
-        img.src = `/img/gallery/img${i}.${extension}`;
-        img.loading = "lazy";
-        img.alt = "Us";
-        galleryTrack.appendChild(img);
+    function drawMap() {
+        const width = columns * stepX;
+        const height = rows * stepY;
+        panX = wrap(panX, width);
+        panY = wrap(panY, height);
+        for (const tile of tiles) {
+            const x = wrap(tile.column * stepX + panX, width) - width / 2;
+            const y = wrap(tile.row * stepY + panY, height) - height / 2;
+            tile.x = x;
+            tile.y = y;
+            tile.button.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        }
+    }
+
+    function layoutMap() {
+        const tileWidth = Math.max(130, Math.min(220, photoMap.clientWidth * 0.34));
+        const tileHeight = tileWidth * 1.3;
+        stepX = tileWidth + 22;
+        stepY = tileHeight + 22;
+        // Extra cells stay outside the viewport, where they wrap invisibly.
+        // Multiples of 5 × 4 keep all 20 photos in a repeating, stable pattern.
+        const width = photoMap.clientWidth * cos + photoMap.clientHeight * Math.abs(sin);
+        const height = photoMap.clientWidth * Math.abs(sin) + photoMap.clientHeight * cos;
+        const nextColumns = Math.ceil((Math.ceil(width / stepX) + 3) / 5) * 5;
+        const nextRows = Math.ceil((Math.ceil(height / stepY) + 3) / 4) * 4;
+        photoMap.style.setProperty("--tile-width", `${tileWidth}px`);
+        photoMap.style.setProperty("--tile-height", `${tileHeight}px`);
+        if (nextColumns !== columns || nextRows !== rows) {
+            columns = nextColumns;
+            rows = nextRows;
+            tiles = [];
+            const fragment = document.createDocumentFragment();
+            for (let row = 0; row < rows; row++) {
+                for (let column = 0; column < columns; column++) {
+                    const photo = (row % 4) * 5 + column % 5 + 1;
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "photo-map-tile";
+                    button.dataset.photo = photo;
+                    button.tabIndex = -1;
+                    button.setAttribute("aria-label", `Open photo ${photo} of ${imageCount} of Dariela and Dejan`);
+                    const img = document.createElement("img");
+                    img.src = `/img/gallery/img${photo}.jpg`;
+                    img.alt = "Dariela and Dejan together";
+                    img.loading = "lazy";
+                    img.decoding = "async";
+                    img.draggable = false;
+                    button.appendChild(img);
+                    fragment.appendChild(button);
+                    tiles.push({button, column, row, photo});
+                }
+            }
+            mapPlane.replaceChildren(fragment);
+        }
+        drawMap();
+    }
+
+    function animateMap(now) {
+        mapFrame = 0;
+        if (!mapVisible || document.hidden) return;
+        const elapsed = Math.min((now - lastFrameTime) / 1000, 0.05);
+        lastFrameTime = now;
+        if (!paused && !motionPreference.matches && !pointer && !photoViewer.open &&
+            now > resumeAt && !photoMap.matches(":focus-visible")) {
+            moveMap(elapsed * 7, elapsed * 7);
+            drawMap();
+        }
+        mapFrame = requestAnimationFrame(animateMap);
+    }
+
+    function startMapAnimation() {
+        if (mapFrame || !mapVisible || document.hidden) return;
+        lastFrameTime = performance.now();
+        mapFrame = requestAnimationFrame(animateMap);
+    }
+
+    function showPhoto(photo, focusTarget = photoMap) {
+        returnFocus = focusTarget;
+        closingViewer = false;
+        viewerImage.src = `/img/gallery/img${photo}.jpg`;
+        viewerImage.alt = `Photo ${photo} of Dariela and Dejan together`;
+        viewerCaption.textContent = `${photo} / ${imageCount} · Our little world ❤️`;
+        if (!photoViewer.open) photoViewer.showModal();
+        document.getElementById("viewerClose").focus({preventScroll: true});
+    }
+
+    function openPhoto(photo, focusTarget) {
+        if (photoViewer.open) return;
+        history.pushState({...history.state, [historyKey]: photo}, "");
+        showPhoto(photo, focusTarget);
+    }
+
+    function closePhoto() {
+        if (!photoViewer.open || closingViewer) return;
+        closingViewer = true;
+        history.back();
+    }
+
+    window.addEventListener("popstate", (event) => {
+        const photo = event.state?.[historyKey];
+        if (Number.isInteger(photo) && photo >= 1 && photo <= imageCount) {
+            scrollToIndex(slides.length - 1);
+            showPhoto(photo);
+        } else if (photoViewer.open) {
+            photoViewer.close();
+            closingViewer = false;
+            resumeAt = performance.now() + 3000;
+            const target = returnFocus.isConnected ? returnFocus : photoMap;
+            target.focus({preventScroll: true});
+        }
+    });
+    document.getElementById("viewerClose").addEventListener("click", closePhoto);
+    photoViewer.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        closePhoto();
+    });
+    photoViewer.addEventListener("click", (event) => {
+        if (event.target === photoViewer) closePhoto();
+    });
+
+    photoMap.addEventListener("pointerdown", (event) => {
+        if (!event.isPrimary || event.button !== 0 || pointer || isAnimating) return;
+        pointer = {
+            id: event.pointerId, x: event.clientX, y: event.clientY,
+            startX: event.clientX, startY: event.clientY, moved: false,
+            tile: event.target.closest(".photo-map-tile")
+        };
+        photoMap.setPointerCapture(event.pointerId);
+    });
+    photoMap.addEventListener("pointermove", (event) => {
+        if (!pointer || pointer.id !== event.pointerId) return;
+        if (!pointer.moved && Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) > 8) {
+            pointer.moved = true;
+            photoMap.classList.add("is-dragging");
+        }
+        if (pointer.moved) {
+            moveMap(event.clientX - pointer.x, event.clientY - pointer.y);
+            drawMap();
+        }
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+    });
+    function endPointer(event) {
+        if (!pointer || pointer.id !== event.pointerId) return;
+        const ended = pointer;
+        pointer = null;
+        photoMap.classList.remove("is-dragging");
+        resumeAt = performance.now() + 3000;
+        if (photoMap.hasPointerCapture(event.pointerId)) photoMap.releasePointerCapture(event.pointerId);
+        if (event.type === "pointerup" && !ended.moved && ended.tile) {
+            openPhoto(Number(ended.tile.dataset.photo), ended.tile);
+        }
+    }
+    photoMap.addEventListener("pointerup", endPointer);
+    photoMap.addEventListener("pointercancel", endPointer);
+    photoMap.addEventListener("lostpointercapture", endPointer);
+    photoMap.addEventListener("dragstart", (event) => event.preventDefault());
+    // Keyboard / assistive-technology activation does not produce pointer events.
+    photoMap.addEventListener("click", (event) => {
+        const tile = event.target.closest(".photo-map-tile");
+        if (event.detail === 0 && tile) openPhoto(Number(tile.dataset.photo), tile);
+    });
+    photoMap.addEventListener("keydown", (event) => {
+        const movement = {ArrowLeft: [90, 0], ArrowRight: [-90, 0], ArrowUp: [0, 90], ArrowDown: [0, -90]};
+        if (movement[event.key]) {
+            event.preventDefault();
+            moveMap(...movement[event.key]);
+            drawMap();
+            resumeAt = performance.now() + 3000;
+        } else if (event.key === "Enter" && event.target === photoMap) {
+            event.preventDefault();
+            const nearest = tiles.reduce((best, tile) =>
+                Math.hypot(tile.x + stepX / 2, tile.y + stepY / 2) <
+                Math.hypot(best.x + stepX / 2, best.y + stepY / 2) ? tile : best);
+            openPhoto(nearest.photo, photoMap);
+        }
+    });
+
+    document.getElementById("memoriesBack").addEventListener("click", () => {
+        if (isAnimating) return;
+        goPrev();
+        lockInput();
+    });
+    function updateMotionButton() {
+        motionButton.setAttribute("aria-pressed", String(paused));
+        motionButton.textContent = paused ? "Resume motion" : "Pause motion";
+        motionButton.disabled = motionPreference.matches;
+        if (motionPreference.matches) motionButton.textContent = "Motion off";
+    }
+    motionButton.addEventListener("click", () => {
+        paused = !paused;
+        updateMotionButton();
+    });
+    motionPreference.addEventListener("change", () => {
+        paused = motionPreference.matches;
+        updateMotionButton();
+    });
+    new ResizeObserver(layoutMap).observe(photoMap);
+    new IntersectionObserver(([entry]) => {
+        mapVisible = entry.isIntersecting;
+        if (mapVisible) startMapAnimation();
+        else {
+            cancelAnimationFrame(mapFrame);
+            mapFrame = 0;
+        }
+    }, {threshold: 0.5}).observe(photoMap);
+    document.addEventListener("visibilitychange", startMapAnimation);
+    layoutMap();
+    updateMotionButton();
+    // Restore an open photo if this history entry is reloaded.
+    const restoredPhoto = history.state?.[historyKey];
+    if (Number.isInteger(restoredPhoto) && restoredPhoto >= 1 && restoredPhoto <= imageCount) {
+        scrollToIndex(slides.length - 1);
+        showPhoto(restoredPhoto);
     }
 }
