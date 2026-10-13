@@ -465,7 +465,7 @@ if (photoMap && mapPlane && photoViewer) {
     let activePhoto = 0;
     let viewerRect = null;
     const viewerClose = document.getElementById("viewerClose");
-    const driftSpeed = 10.35;
+    const driftSpeed = 11.9025;
     const openDuration = 480;
     const closeDuration = 380;
     const fullImageFrame = {
