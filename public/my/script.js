@@ -468,7 +468,10 @@ if (photoMap && mapPlane && photoViewer) {
         panY = wrap(panY, height);
         for (const tile of tiles) {
             const x = wrap(tile.column * stepX + panX, width) - width / 2;
-            const y = wrap(tile.row * stepY + panY, height) - height / 2;
+            // Raise each successive column; include the offset in the wrap so
+            // the stagger stays seamless as photos travel around the map.
+            const columnOffset = -(tile.column % 5) * stepY / 5;
+            const y = wrap(tile.row * stepY + columnOffset + panY, height) - height / 2;
             tile.x = x;
             tile.y = y;
             tile.button.style.transform = `translate3d(${x}px, ${y}px, 0)`;
@@ -525,7 +528,7 @@ if (photoMap && mapPlane && photoViewer) {
         lastFrameTime = now;
         if (!paused && !motionPreference.matches && !pointer && !photoViewer.open &&
             now > resumeAt && !photoMap.matches(":focus-visible")) {
-            moveMap(elapsed * 7, elapsed * 7);
+            moveMap(elapsed * 9, elapsed * 9);
             drawMap();
         }
         mapFrame = requestAnimationFrame(animateMap);
@@ -608,7 +611,7 @@ if (photoMap && mapPlane && photoViewer) {
         const ended = pointer;
         pointer = null;
         photoMap.classList.remove("is-dragging");
-        resumeAt = performance.now() + 3000;
+        resumeAt = 0;
         if (photoMap.hasPointerCapture(event.pointerId)) photoMap.releasePointerCapture(event.pointerId);
         if (event.type === "pointerup" && !ended.moved && ended.tile) {
             openPhoto(Number(ended.tile.dataset.photo), ended.tile);
