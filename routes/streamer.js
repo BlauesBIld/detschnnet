@@ -32,7 +32,8 @@ router.get('/', authenticationService.authenticateJWT, (req, res) => {
     spotifyController.getSpotifyLinkToAuthorize().then((spotifyLink) => {
         twitchController.getTwitchLinkToAuthorize().then((twitchLink) => {
             nightBotController.getNightBotLinkToAuthorize().then((nightbotLink) => {
-                res.render('streamer', { loggedInUser: req.user, spotifyLink: spotifyLink, twitchLink: twitchLink, nightbotLink: nightbotLink});
+                res.render('streamer', { loggedInUser: req.user, spotifyLink: spotifyLink, twitchLink: twitchLink, nightbotLink: nightbotLink,
+                    galleryUploadEnabled: process.env.GALLERY_UPLOAD_ENABLED !== 'false'});
             });
         });
     });

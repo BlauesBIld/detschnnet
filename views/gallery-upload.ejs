@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Add photos · Our little world</title>
+    <link rel="stylesheet" href="/my/gallery-upload.css">
+</head>
+<body>
+<main>
+    <nav><a href="/streamer/">← Streamer dashboard</a><span><%= loggedInUser.username %></span></nav>
+    <header>
+        <p class="eyebrow">Our little world</p>
+        <h1>Add more memories.</h1>
+        <p>Your photos will appear on the last page of the gallery.</p>
+    </header>
+    <% if (message) { %><p class="notice" role="status"><%= message %></p><% } %>
+    <form action="/my/gallery/upload" method="post" enctype="multipart/form-data" id="uploadForm">
+        <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+        <label for="photos">Choose photos</label>
+        <input id="photos" name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple required>
+        <p class="hint">JPG, PNG or WebP · Up to <%= maxFiles %> photos at once · 15 MB per photo</p>
+        <div class="selection" id="selection" aria-live="polite"></div>
+        <p id="uploadStatus" role="status"></p>
+        <button type="submit" id="uploadButton">Add to the map</button>
+        <p class="hint">Uploaded photos are visible to anyone who can view the gallery.</p>
+    </form>
+    <section>
+        <div class="section-title"><h2><%= photos.length %> <%= photos.length === 1 ? 'memory' : 'memories' %> on the map</h2><a href="/my/love.html">View gallery →</a></div>
+        <div class="photos">
+            <% photos.slice(-12).reverse().forEach(photo => { %>
+                <img src="<%= photo.thumbnail %>" alt="Gallery photo" loading="lazy">
+            <% }); %>
+        </div>
+    </section>
+</main>
+<script>
+    const input = document.getElementById('photos');
+    const selection = document.getElementById('selection');
+    const status = document.getElementById('uploadStatus');
+    let previews = [];
+    input.addEventListener('change', () => {
+        previews.forEach(url => URL.revokeObjectURL(url));
+        previews = [];
+        selection.replaceChildren();
+        const files = Array.from(input.files);
+        const error = files.length > <%= maxFiles %> ? 'Choose up to <%= maxFiles %> photos at once.' :
+            files.some(file => file.size > <%= maxFileBytes %>) ? 'Each photo must be at most 15 MB.' : '';
+        input.setCustomValidity(error);
+        status.textContent = error || (files.length ? `${files.length} ${files.length === 1 ? 'photo' : 'photos'} selected` : '');
+        files.slice(0, <%= maxFiles %>).forEach(file => {
+            const image = document.createElement('img');
+            const url = URL.createObjectURL(file);
+            previews.push(url);
+            image.src = url;
+            image.alt = file.name;
+            selection.appendChild(image);
+        });
+    });
+    document.getElementById('uploadForm').addEventListener('submit', () => {
+        document.getElementById('uploadButton').disabled = true;
+        status.textContent = 'Adding your photos…';
+    });
+    window.addEventListener('pageshow', () => {document.getElementById('uploadButton').disabled = false;});
+</script>
+</body>
+</html>

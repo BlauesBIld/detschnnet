@@ -34,7 +34,6 @@ const cors = require('cors');
 app.use(cors());
 
 const fileUpload = require('express-fileupload');
-app.use(fileUpload({createParentPath: true}));
 
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
@@ -56,6 +55,11 @@ app.use(session({
         sameSite: 'lax'
     }
 }));
+
+// The temporary gallery uploader authenticates before parsing file bodies.
+const {createGalleryRouter} = require('./routes/gallery');
+app.use('/my/gallery', createGalleryRouter());
+app.use(fileUpload({createParentPath: true}));
 
 const indexRouter = require('./routes/index');
 const twitchRouter = require('./routes/twitch');

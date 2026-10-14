@@ -432,7 +432,12 @@ const viewerCaption = document.getElementById("viewerCaption");
 const motionButton = document.getElementById("mapMotion");
 
 if (photoMap && mapPlane && photoViewer) {
-    const imageCount = 20;
+    let photos = Array.from({length: 20}, (_, index) => ({id: index + 1,
+        src: `/img/gallery/img${index + 1}.jpg`, thumbnail: `/img/gallery/thumbs/img${index + 1}.webp`}));
+    let photosById = new Map(photos.map(photo => [String(photo.id), photo]));
+    let imageCount = photos.length;
+    let photoRows = Math.ceil(imageCount / 5);
+    let renderedPhotos = null;
     const angle = -16 * Math.PI / 180;
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
@@ -522,29 +527,32 @@ if (photoMap && mapPlane && photoViewer) {
         stepX = tileWidth + 22;
         stepY = tileHeight + 22;
         // Extra cells stay outside the viewport, where they wrap invisibly.
-        // Multiples of 5 × 4 keep all 20 photos in a repeating, stable pattern.
+        // Whole catalog repeats keep every photo available as the map wraps.
         const width = photoMap.clientWidth * cos + photoMap.clientHeight * Math.abs(sin);
         const height = photoMap.clientWidth * Math.abs(sin) + photoMap.clientHeight * cos;
         const nextColumns = Math.ceil((Math.ceil(width / stepX) + 3) / 5) * 5;
-        const nextRows = Math.ceil((Math.ceil(height / stepY) + 3) / 4) * 4;
+        const nextRows = Math.ceil((Math.ceil(height / stepY) + 3) / photoRows) * photoRows;
         photoMap.style.setProperty("--tile-width", `${tileWidth}px`);
         photoMap.style.setProperty("--tile-height", `${tileHeight}px`);
-        if (nextColumns !== columns || nextRows !== rows) {
+        if (nextColumns !== columns || nextRows !== rows || renderedPhotos !== photos) {
             columns = nextColumns;
             rows = nextRows;
+            renderedPhotos = photos;
             tiles = [];
             const fragment = document.createDocumentFragment();
             for (let row = 0; row < rows; row++) {
                 for (let column = 0; column < columns; column++) {
-                    const photo = (row % 4) * 5 + column % 5 + 1;
+                    const index = ((row % photoRows) * 5 + column % 5) % imageCount;
+                    const entry = photos[index];
+                    const photo = entry.id;
                     const button = document.createElement("button");
                     button.type = "button";
                     button.className = "photo-map-tile";
                     button.dataset.photo = photo;
                     button.tabIndex = -1;
-                    button.setAttribute("aria-label", `Open photo ${photo} of ${imageCount} of Dariela and Dejan`);
+                    button.setAttribute("aria-label", `Open photo ${index + 1} of ${imageCount} of Dariela and Dejan`);
                     const img = document.createElement("img");
-                    img.src = `/img/gallery/thumbs/img${photo}.webp`;
+                    img.src = entry.thumbnail;
                     img.alt = "Dariela and Dejan together";
                     img.loading = "lazy";
                     img.decoding = "async";
@@ -646,6 +654,9 @@ if (photoMap && mapPlane && photoViewer) {
     }
 
     async function showPhoto(photo, focusTarget = photoMap) {
+        const entry = photosById.get(String(photo));
+        if (!entry) return;
+        photo = entry.id;
         const generation = ++viewerGeneration;
         stopViewerAnimations();
         returnFocus = focusTarget;
@@ -657,13 +668,14 @@ if (photoMap && mapPlane && photoViewer) {
         // Begin with the cached preview; decode the original off-screen and swap
         // it in after the flight, without changing the image's fitted dimensions.
         viewerImage.style.visibility = "hidden";
-        viewerImage.src = tile?.img.currentSrc || tile?.img.src || `/img/gallery/img${photo}.jpg`;
-        viewerImage.alt = `Photo ${photo} of Dariela and Dejan together`;
-        viewerCaption.textContent = `${photo} / ${imageCount} · Our little world ❤️`;
+        viewerImage.src = tile?.img.currentSrc || tile?.img.src || entry.src;
+        const index = photos.indexOf(entry) + 1;
+        viewerImage.alt = `Photo ${index} of Dariela and Dejan together`;
+        viewerCaption.textContent = `${index} / ${imageCount} · Our little world ❤️`;
         if (!photoViewer.open) photoViewer.showModal();
         viewerClose.focus({preventScroll: true});
         const fullImage = new Image();
-        fullImage.src = `/img/gallery/img${photo}.jpg`;
+        fullImage.src = entry.src;
         const fullReady = fullImage.decode().then(() => fullImage).catch(() => null);
         const duration = motionPreference.matches ? 0 : openDuration;
         photoViewer.classList.add("is-transitioning");
@@ -735,6 +747,9 @@ if (photoMap && mapPlane && photoViewer) {
 
     function openPhoto(photo, focusTarget) {
         if (photoViewer.open) return;
+        const entry = photosById.get(String(photo));
+        if (!entry) return;
+        photo = entry.id;
         history.pushState({...history.state, [historyKey]: photo}, "");
         showPhoto(photo, focusTarget);
     }
@@ -747,7 +762,7 @@ if (photoMap && mapPlane && photoViewer) {
 
     window.addEventListener("popstate", (event) => {
         const photo = event.state?.[historyKey];
-        if (Number.isInteger(photo) && photo >= 1 && photo <= imageCount) {
+        if (photosById.has(String(photo))) {
             scrollToIndex(slides.length - 1);
             showPhoto(photo);
         } else if (photoViewer.open) {
@@ -833,7 +848,7 @@ if (photoMap && mapPlane && photoViewer) {
             // A native click can arrive even when a browser omitted pointerup.
             if (pointer) endPointer({pointerId: pointer.id, type: "pointerup"});
             pendingTapTile = null;
-            openPhoto(Number(tile.dataset.photo), tile);
+            openPhoto(tile.dataset.photo, tile);
         }
     });
     photoMap.addEventListener("keydown", (event) => {
@@ -885,10 +900,24 @@ if (photoMap && mapPlane && photoViewer) {
     document.addEventListener("visibilitychange", startMapAnimation);
     layoutMap();
     updateMotionButton();
-    // Restore an open photo if this history entry is reloaded.
-    const restoredPhoto = history.state?.[historyKey];
-    if (Number.isInteger(restoredPhoto) && restoredPhoto >= 1 && restoredPhoto <= imageCount) {
-        scrollToIndex(slides.length - 1);
-        showPhoto(restoredPhoto);
+    function restorePhoto() {
+        const restoredPhoto = history.state?.[historyKey];
+        if (!photoViewer.open && photosById.has(String(restoredPhoto))) {
+            scrollToIndex(slides.length - 1);
+            showPhoto(restoredPhoto);
+        }
     }
+    restorePhoto();
+    fetch('/my/gallery/photos', {cache: 'no-store'})
+        .then(response => {if (!response.ok) throw new Error('Gallery unavailable'); return response.json();})
+        .then(catalog => {
+            if (!Array.isArray(catalog) || !catalog.length || JSON.stringify(catalog) === JSON.stringify(photos)) return;
+            photos = catalog;
+            photosById = new Map(photos.map(photo => [String(photo.id), photo]));
+            imageCount = photos.length;
+            photoRows = Math.ceil(imageCount / 5);
+            layoutMap();
+            restorePhoto();
+        })
+        .catch(() => {}); // Keep the original gallery usable if the catalog request fails.
 }

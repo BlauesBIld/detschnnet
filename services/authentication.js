@@ -24,7 +24,8 @@ function authenticateJWT(req, res, next) {
         jwt.verify(token, ACCESS_TOKEN_SECRET, (err, user) => {
             if (err) {
                 const message = 'There was an error with your session. Please log in again.';
-                res.render('login', {message: message});
+                res.clearCookie('accessToken');
+                return res.status(401).render('login', {message: message});
             }
             req.user = user;
             next();

@@ -10,7 +10,7 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
 
 // A browser boundary double: exercise real event handlers and animation promises,
 // including cancellation, without loading unrelated slides or network images.
-function setup({width = 390, height = 844, reduced = false} = {}) {
+function setup({width = 390, height = 844, reduced = false, catalog, catalogFails = false, initialHistory = null} = {}) {
     let now = 1000, nextFrame = 0, tileWrites = 0, focus = null;
     const frames = new Map(), animations = [], windowEvents = {}, resizes = [];
     const preference = {matches: reduced, addEventListener() {}};
@@ -82,7 +82,7 @@ function setup({width = 390, height = 844, reduced = false} = {}) {
     map.clientWidth = width; map.clientHeight = height;
     viewer.clientWidth = width; viewer.clientHeight = height;
     elements.viewerImage.tag = 'viewer-image';
-    const history = {state: null,
+    const history = {state: initialHistory,
         pushState(state) {this.state = state;},
         back() {this.state = null; windowEvents.popstate({state: null});}
     };
@@ -91,6 +91,8 @@ function setup({width = 390, height = 844, reduced = false} = {}) {
             createDocumentFragment: () => new Element(), addEventListener() {}},
         window: {matchMedia: () => preference, addEventListener: (name, handler) => {windowEvents[name] = handler;}},
         performance: {now: () => now}, history, Image: Element,
+        fetch: async () => ({ok: !catalogFails, json: async () => catalog || Array.from({length: 20}, (_, index) => ({id: index + 1,
+            src: `/img/gallery/img${index + 1}.jpg`, thumbnail: `/img/gallery/thumbs/img${index + 1}.webp`}))}),
         getComputedStyle(element) {
             const animation = element.activeAnimations.at(-1);
             return {paddingLeft: '24', paddingRight: '24', paddingTop: '80', paddingBottom: '56',
@@ -318,4 +320,47 @@ test('resize while viewing returns to a connected tile and reduced motion skips 
     assert.equal(s.viewer.open, false);
     assert.equal(s.focus.isConnected, true);
     assert.equal(s.focus.dataset.photo, original.dataset.photo);
+});
+
+test('uploaded photos beyond the original twenty open with stable IDs and survive history and resize', async () => {
+    const original = Array.from({length: 20}, (_, index) => ({id: index + 1,
+        src: `/img/gallery/img${index + 1}.jpg`, thumbnail: `/img/gallery/thumbs/img${index + 1}.webp`}));
+    const uploaded = Array.from({length: 3}, (_, index) => ({id: `upload-fixture-${index}`,
+        src: `/img/gallery/uploads/photo-${index}.jpg`, thumbnail: `/img/gallery/uploads/thumbs/photo-${index}.webp`}));
+    const s = setup({catalog: [...original, ...uploaded]});
+    await flush();
+    const ids = new Set(s.plane.children.map(button => button.dataset.photo));
+    for (const photo of [...original, ...uploaded]) assert.ok(ids.has(photo.id));
+    const tile = s.plane.children.find(button => button.dataset.photo === uploaded[2].id);
+    s.click(tile); await flush();
+    assert.equal(s.history.state.lovePhoto, uploaded[2].id);
+    assert.equal(s.elements.viewerCaption.textContent, '23 / 23 · Our little world ❤️');
+    s.finishAnimations(); await flush();
+    assert.equal(s.elements.viewerImage.src, uploaded[2].src);
+    s.resize(1600, 1000);
+    s.history.back(); await flush(); s.finishAnimations(); await flush();
+    assert.equal(s.viewer.open, false);
+    assert.equal(s.focus.dataset.photo, uploaded[2].id);
+    s.windowEvents.popstate({state: {lovePhoto: uploaded[2].id}});
+    await flush(); s.finishAnimations(); await flush();
+    assert.equal(s.viewer.open, true);
+    assert.equal(s.elements.viewerImage.src, uploaded[2].src);
+});
+
+test('an uploaded history photo is restored after its catalog loads', async () => {
+    const photo = {id: 'upload-restored', src: '/img/gallery/uploads/restored.jpg',
+        thumbnail: '/img/gallery/uploads/thumbs/restored.webp'};
+    const s = setup({catalog: [photo], initialHistory: {lovePhoto: photo.id}});
+    await flush(); s.finishAnimations(); await flush();
+    assert.equal(s.viewer.open, true);
+    assert.equal(s.elements.viewerImage.src, photo.src);
+    assert.equal(s.elements.viewerCaption.textContent, '1 / 1 · Our little world ❤️');
+});
+
+test('a catalog error retains the original gallery and its working tap handling', async () => {
+    const s = setup({catalogFails: true});
+    await flush();
+    s.click(s.plane.children[0]); await flush(); s.finishAnimations(); await flush();
+    assert.equal(s.viewer.open, true);
+    assert.match(s.elements.viewerCaption.textContent, /\/ 20/);
 });
