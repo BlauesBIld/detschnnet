@@ -7,7 +7,7 @@ const {randomBytes, timingSafeEqual} = require('node:crypto');
 const authentication = require('../services/authentication');
 const {createGalleryStore, GalleryUploadError, MAX_FILES, MAX_FILE_BYTES} = require('../services/gallery');
 
-function createGalleryRouter({store = createGalleryStore(), tempDirectory = path.join(os.tmpdir(), 'detschn-gallery-upload'),
+function createGalleryRouter({store = createGalleryStore(), tempDirectory = path.join(os.tmpdir(), 'detschn-gallery-upload'), auth = authentication,
     enabled = () => process.env.GALLERY_UPLOAD_ENABLED !== 'false'} = {}) {
     const router = express.Router();
     const upload = fileUpload({useTempFiles: true, tempFileDir: tempDirectory, createParentPath: true,
@@ -40,14 +40,14 @@ function createGalleryRouter({store = createGalleryStore(), tempDirectory = path
         res.set('Cache-Control', 'no-store');
         try {res.json(await store.listPhotos());} catch (error) {next(error);}
     });
-    router.get('/upload', temporaryPage, authentication.authenticateJWT, async (req, res, next) => {
+    router.get('/upload', temporaryPage, auth.authenticateAdmin, async (req, res, next) => {
         try {
             const message = req.session.galleryUploadMessage || '';
             delete req.session.galleryUploadMessage;
             await renderPage(req, res, message);
         } catch (error) {next(error);}
     });
-    router.post('/upload', temporaryPage, authentication.authenticateJWT, (req, res, next) => {
+    router.post('/upload', temporaryPage, auth.authenticateAdmin, (req, res, next) => {
         // Authentication runs before multipart parsing and temporary-file writes.
         res.on('finish', () => {cleanup(req);});
         next();

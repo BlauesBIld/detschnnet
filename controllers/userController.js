@@ -133,7 +133,7 @@ function registeredUser(req, res, next) {
     userModel.createUser(req.body, req.files)
         .then((user) => {
             // res.render('index', {title: 'Express', loggedInUser: user});
-            res.redirect('/login');
+            res.redirect('/streamer/login');
         })
         .catch((err) => {
             res.status(500);

@@ -23,6 +23,11 @@
     <div class="row my-4 mb-5 text-center">
         <h1>Welcome <%= loggedInUser.username %></h1>
     </div>
+    <% if (loggedInUser.username === 'detschn') { %>
+        <div class="row my-4 text-center">
+            <div><a class="btn btn-outline-light" href="/streamer/login-access">Manage login access</a></div>
+        </div>
+    <% } %>
     <% if (galleryUploadEnabled) { %>
         <div class="row my-4 text-center">
             <div><a class="btn btn-outline-light" href="/my/gallery/upload">Upload gallery photos</a></div>

@@ -12,6 +12,7 @@ const sharp = require('sharp');
 const secret = 'gallery-upload-test-secret';
 process.env.ACCESS_TOKEN_SECRET = secret;
 const {createGalleryRouter} = require('../routes/gallery');
+const {createAuthentication} = require('../services/authentication');
 const {createGalleryStore, MAX_FILES, MAX_FILE_BYTES} = require('../services/gallery');
 const fixture = () => sharp({create: {width: 600, height: 900, channels: 3, background: '#b05273'}}).png().toBuffer();
 
@@ -26,7 +27,14 @@ async function setup(t, {enabled = true} = {}) {
     app.set('views', path.join(__dirname, '../views'));
     app.use(cookieParser());
     app.use(session({secret: 'test-session-secret', resave: false, saveUninitialized: false}));
-    app.use('/my/gallery', createGalleryRouter({store, tempDirectory, enabled: () => enabled}));
+    const accounts = new Map([
+        ['owner', {uuid: 'owner', username: 'detschn', user_role: 'streamer', login_enabled: true}],
+        ['admin', {uuid: 'admin', username: 'test-admin', user_role: 'admin', login_enabled: true}],
+        ['streamer', {uuid: 'streamer', username: 'test-streamer', user_role: 'streamer', login_enabled: true}],
+        ['disabled', {uuid: 'disabled', username: 'disabled-admin', user_role: 'admin', login_enabled: false}]
+    ]);
+    const auth = createAuthentication({getUserByUuid: async uuid => accounts.get(uuid)});
+    app.use('/my/gallery', createGalleryRouter({store, tempDirectory, auth, enabled: () => enabled}));
     app.use('/img/gallery', express.static(root));
     app.use((error, req, res, next) => res.status(500).send(error.message));
     const server = await new Promise((resolve, reject) => {
@@ -42,7 +50,7 @@ async function setup(t, {enabled = true} = {}) {
         await fs.rm(directory, {recursive: true, force: true});
     });
     const base = `http://127.0.0.1:${server.address().port}`;
-    const token = jwt.sign({username: 'test-streamer', role: 'streamer'}, secret, {expiresIn: '1h'});
+    const token = jwt.sign({uuid: 'admin', username: 'test-admin', role: 'admin'}, secret, {expiresIn: '1h'});
     async function form() {
         const response = await fetch(`${base}/my/gallery/upload`, {headers: {Cookie: `accessToken=${token}`}});
         assert.equal(response.status, 200);
@@ -70,13 +78,35 @@ test('upload page and POST reject absent, expired and forged JWTs before writing
         const cookie = token ? `accessToken=${token}` : '';
         const page = await fetch(`${s.base}/my/gallery/upload`, {headers: {Cookie: cookie}});
         assert.match(await page.text(), /Please log in|session/);
-        assert.equal(page.status, token ? 401 : 200);
+        assert.equal(page.status, 401);
         const posted = await s.post(s.filesForm('invalid', [{data: await fixture()}]), cookie);
-        assert.equal(posted.status, token ? 401 : 200);
+        assert.equal(posted.status, 401);
         assert.match(await posted.text(), /Please log in|session/);
         assert.deepEqual((await s.store.listPhotos()).map(photo => photo.id), [1]);
         await assert.rejects(fs.access(s.tempDirectory));
     }
+});
+
+test('streamers, disabled admins and deleted accounts cannot upload, regardless of JWT role', async t => {
+    const s = await setup(t);
+    for (const uuid of ['streamer', 'disabled', 'deleted']) {
+        const token = jwt.sign({uuid, username: 'detschn', role: 'admin'}, secret, {expiresIn: '1h'});
+        const cookie = `accessToken=${token}`;
+        const page = await fetch(`${s.base}/my/gallery/upload`, {headers: {Cookie: cookie}});
+        assert.equal(page.status, 403);
+        const posted = await s.post(s.filesForm('invalid', [{data: await fixture()}]), cookie);
+        assert.equal(posted.status, 403);
+        await assert.rejects(fs.access(s.tempDirectory));
+        assert.equal((await s.store.listPhotos()).length, 1);
+    }
+});
+
+test('detschn can access uploads even when its stored role and JWT role are streamer', async t => {
+    const s = await setup(t);
+    const token = jwt.sign({uuid: 'owner', role: 'streamer'}, secret, {expiresIn: '1h'});
+    const response = await fetch(`${s.base}/my/gallery/upload`, {headers: {Cookie: `accessToken=${token}`}});
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /name="csrfToken"/);
 });
 
 test('authenticated multipart uploads create safe image names, previews and persistent catalog entries', async t => {

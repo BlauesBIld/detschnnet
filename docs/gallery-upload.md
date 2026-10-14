@@ -1,6 +1,6 @@
 # Temporary gallery uploads
 
-Log in at `/streamer/login` with an existing streamer account, then select **Upload gallery photos** on the dashboard. The page is also available at `/my/gallery/upload`; both the page and its POST handler require a valid `accessToken` JWT cookie. Invalid or expired tokens stop before multipart parsing.
+Log in at `/streamer/login` as **detschn** or an enabled **admin**, then select **Upload gallery photos** on the dashboard. The page is also available at `/my/gallery/upload`; both the page and its POST handler verify the `accessToken` JWT cookie and check the current database account. Disabled accounts and streamers cannot upload. Authentication and authorization stop rejected requests before multipart parsing. Only detschn can enable other accounts at `/streamer/login-access`; see [login access](login-access.md).
 
 Select up to 50 JPG, PNG or WebP photos (15 MB per file). Each batch is checked before publishing any photo. The server creates an oriented JPEG for the viewer and a small WebP preview, then redirects back to the upload page. Refresh `/my/love.html` to see new photos on the last page. Uploading is protected by a session form token.
 

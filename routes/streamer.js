@@ -4,7 +4,7 @@ const router = express.Router();
 const authenticationService = require("../services/authentication");
 const userModel = require("../models/userModel");
 const userController = require("../controllers/userController");
-const {authenticateUserLogin} = require("../services/authentication");
+const {createLoginAccessRouter} = require('./loginAccess');
 const twitchController = require('../controllers/twitchController');
 const nightBotController = require('../controllers/nightbotController');
 const spotifyController = require('../controllers/spotifyController');
@@ -16,7 +16,7 @@ router.route('/login')
     })
     .post((req, res, next) => {
         userModel.getUsers().then((users) => {
-            authenticationService.authenticateUserLogin(req.body, users, res)
+            return authenticationService.authenticateUserLogin(req.body, users, res);
         }).catch((err) => {
             res.status(500);
             next(err);
@@ -33,11 +33,13 @@ router.get('/', authenticationService.authenticateJWT, (req, res) => {
         twitchController.getTwitchLinkToAuthorize().then((twitchLink) => {
             nightBotController.getNightBotLinkToAuthorize().then((nightbotLink) => {
                 res.render('streamer', { loggedInUser: req.user, spotifyLink: spotifyLink, twitchLink: twitchLink, nightbotLink: nightbotLink,
-                    galleryUploadEnabled: process.env.GALLERY_UPLOAD_ENABLED !== 'false'});
+                    galleryUploadEnabled: process.env.GALLERY_UPLOAD_ENABLED !== 'false' && authenticationService.isAdmin(req.user)});
             });
         });
     });
 });
+
+router.use('/login-access', createLoginAccessRouter());
 
 router.get('/register', authenticationService.authenticateAdmin, userController.registerUser);
 router.post('/register', authenticationService.authenticateAdmin, userController.registeredUser);
