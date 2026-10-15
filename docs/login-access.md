@@ -50,3 +50,14 @@ generate a bcrypt hash with the installed Node bcrypt package and update only th
 account's `password_hash` using a parameterized query or a SQL string literal.
 There is no need for a PostgreSQL extension. Keep actual passwords and reset hashes
 out of source control.
+
+## Deployment troubleshooting
+
+If the dashboard shows the new link but `/streamer/login-access` responds with
+`Cannot GET`, check for an old Node process: EJS templates are read from disk,
+while Express routes are loaded when the process starts. The deployment script
+stops both the current `detschnnet` and legacy `detschnet` screen sessions, waits
+for port 13061 to be released, and verifies that the new route returns HTTP 401
+for an anonymous visitor. Website process output is appended to
+`logs/website-startup.log`. The deployment fails if the port remains occupied or
+the route check fails.
