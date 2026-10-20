@@ -91,6 +91,14 @@ class VoiceNotificationTests(unittest.IsolatedAsyncioTestCase):
 
         ns["save_couple_notification_time"](datetime.now(ZoneInfo("UTC")) - timedelta(hours=12, minutes=1))
         await handler(first, SimpleNamespace(channel=separate), same_channel)
+        self.assertEqual(destination.send.await_count, 1)
+
+        ns["save_couple_notification_time"](datetime.now(ZoneInfo("UTC")) - timedelta(hours=47, minutes=59))
+        await handler(first, SimpleNamespace(channel=separate), same_channel)
+        self.assertEqual(destination.send.await_count, 1)
+
+        ns["save_couple_notification_time"](datetime.now(ZoneInfo("UTC")) - timedelta(days=2, minutes=1))
+        await handler(first, SimpleNamespace(channel=separate), same_channel)
         self.assertEqual(destination.send.await_count, 2)
         bot.fetch_channel.assert_not_awaited()
 

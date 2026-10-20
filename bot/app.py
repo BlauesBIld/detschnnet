@@ -17,7 +17,7 @@ CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 DAILY_QUESTION_TASK: asyncio.Task | None = None
 COUPLE_USER_IDS = frozenset({255195754702962688, 218644051770081281})
 COUPLE_NOTIFICATION_CHANNEL_ID = 1376964700910391486
-COUPLE_NOTIFICATION_COOLDOWN = timedelta(hours=12)
+COUPLE_NOTIFICATION_COOLDOWN = timedelta(days=2)
 COUPLE_VOICE_MESSAGE = (
     "Hello, I can see that both of you just got together in a voice channel! "
     "Why don't you turn on your cameras so you can see each other and be even happier? "
