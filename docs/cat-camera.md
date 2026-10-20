@@ -201,9 +201,21 @@ On the admin camera page, expand **Discord alerts**, paste a Discord incoming
 webhook URL, select **Enabled**, and save. Create the webhook in the destination
 Discord channel's **Integrations → Webhooks** settings. Use **Send test message**
 after saving to check delivery. The channel receives “Motion detected on camera,
-please check” with a link to the admin camera page; images, video, camera IP and
-camera credentials are not included. Discord messages continue when the browser
+please check” with a JPEG screenshot from the motion event and a link to the admin
+camera page. Video, camera IP and camera credentials are not included. Discord messages continue when the browser
 is closed, while the website's motion monitoring is enabled.
+
+The screenshot is extracted from the buffered video at the event's timestamp,
+resized to at most 1280 pixels wide, and uploaded directly as a Discord attachment.
+The server waits a few seconds for the relevant video segment to close, rather
+than waiting for the full clip. If a screenshot is unavailable (for example during
+startup or a camera outage), the text alert is still sent and says so. The
+message cooldown also prevents unnecessary screenshot processing. Tests include
+a current screenshot when the recording buffer is available. The page reports
+whether the last successful message had a screenshot.
+
+Screenshots sent to Discord are accessible in the webhook's destination channel.
+The website's three-day cleanup applies to local recordings, not Discord uploads.
 
 The default message cooldown is 60 seconds, adjustable from 15 to 3600 seconds.
 Repeated active-state events do not create more messages. Motion that restarts

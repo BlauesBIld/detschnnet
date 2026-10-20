@@ -147,7 +147,14 @@ test('real FFmpeg captures pre/post-event footage, saves playable H.264/AAC MP4 
     await once(server, 'listening');
     const clips = createClipStore({directory: path.join(root, 'recordings')});
     const events = [];
-    monitor = createCameraMonitor({store: {read: async () => ({host: '192.168.1.50', port: 554, username: 'test', password: 'secret', motionEnabled: true})},
+    const uploads = [];
+    const discord = createDiscordAlerts({fetchImpl: async (target, options) => {
+        uploads.push({at: Date.now(), body: options.body});
+        return new Response('{}', {status: 200});
+    }});
+    monitor = createCameraMonitor({store: {read: async () => ({host: '192.168.1.50', port: 554, username: 'test', password: 'secret', motionEnabled: true,
+        discordEnabled: true, discordWebhookUrl: 'https://discord.com/api/webhooks/123456789012345678/abcdefghijklmnopqrstuvwxyz_0123456789'})},
+        discord,
         bridge: {recordingUrl: async () => `http://127.0.0.1:${server.address().port}/source.mp4`}, clips, ffmpegPath: ffmpeg,
         preMs: 2000, postMs: 2000, maxMs: 10000,
         watchMotion: (settings, {onStatus}) => {onStatus('listening'); return {close() {}};},
@@ -163,6 +170,15 @@ test('real FFmpeg captures pre/post-event footage, saves playable H.264/AAC MP4 
     await new Promise(resolve => setTimeout(resolve, 200));
     monitor.noteMotion(false);
     const clip = await waitFor(async () => (await clips.list()).clips.find(clip => clip.status === 'ready'));
+    await waitFor(() => uploads.length);
+    const image = uploads[0].body.get('files[0]');
+    assert.ok(image, 'motion alert includes an event screenshot');
+    const metadata = await require('sharp')(Buffer.from(await image.arrayBuffer())).metadata();
+    assert.equal(metadata.format, 'jpeg');
+    assert.equal(metadata.width, 320);
+    assert.equal(metadata.height, 180);
+    assert.ok(uploads[0].at - triggered < 10000, 'screenshot does not wait for a full post-event clip');
+    assert.equal(monitor.status().discord.lastScreenshot, true);
     assert.ok(events.some(event => event.type === 'motion' && event.data.at === triggered));
     assert.ok(clip.duration >= 3.5, 'clip includes pre-event and post-event video');
     const offset = (clip.events[0] - clip.startAt) / 1000;

@@ -6,6 +6,7 @@ const {EventEmitter} = require('node:events');
 const {watchCameraMotion} = require('./cameraMotion');
 const {createClipStore} = require('./cameraClips');
 const {createDiscordAlerts} = require('./cameraDiscord');
+const {extractCameraJpeg} = require('./cameraSnapshot');
 
 const PRE_MS = 10_000, POST_MS = 20_000, MAX_MS = 120_000;
 
@@ -24,6 +25,7 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
     const bus = new EventEmitter();
     bus.setMaxListeners(100);
     const epoch = randomUUID(), history = [];
+    const screenshotTasks = new Set();
     const bufferRoot = path.resolve(clips.directory, '../buffer');
     let seq = 0, started = false, stopped = false, initialized = false, ticking = false, interval;
     let settings, fingerprint = '', settingsChecked = 0, sensor, recorder, session, segments = [], windows = [];
@@ -51,7 +53,7 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
             state.lastMotionAt = at;
             publish('motion', {at, recording});
             // Delivery is independent of recording and never delays camera events.
-            discord.send().then(announce, announce);
+            discord.send({screenshot: () => captureScreenshot(at)}).then(announce, announce);
         }
         motionActive = active;
         announce();
@@ -108,6 +110,39 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
         const names = new Set(expired.map(segment => segment.name));
         segments = segments.filter(segment => !names.has(segment.name));
     }
+    function holdSegments(currentSession, selected) {
+        for (const segment of selected) currentSession.held.set(segment.name, (currentSession.held.get(segment.name) || 0) + 1);
+        return () => {
+            for (const segment of selected) {
+                const remaining = currentSession.held.get(segment.name) - 1;
+                if (remaining) currentSession.held.set(segment.name, remaining);
+                else currentSession.held.delete(segment.name);
+            }
+        };
+    }
+    function captureScreenshot(at) {
+        const task = (async () => {
+            const currentSession = session;
+            const deadline = Date.now() + 6000;
+            // Wait for the closed segment containing the event, never use an
+            // older thumbnail or wait for the whole post-event clip to finish.
+            while (!stopped && recorder && currentSession && session === currentSession && state.recording !== 'error' && Date.now() < deadline) {
+                const segment = segments.find(item => item.startAt <= at && item.endAt > at);
+                if (segment) {
+                    const release = holdSegments(currentSession, [segment]);
+                    try {
+                        const offset = Math.min((at - segment.startAt) / 1000, Math.max(0, segment.end - segment.start - 0.1));
+                        return await extractCameraJpeg({filename: segment.file, offset, ffmpegPath, spawnImpl});
+                    } finally {release();}
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            return null;
+        })().catch(() => null);
+        screenshotTasks.add(task);
+        task.then(() => screenshotTasks.delete(task));
+        return task;
+    }
     function createWindow(at) {
         const window = {id: randomUUID(), eventAt: at, startAt: at - preMs, endAt: at + postMs,
             maxAt: at - preMs + maxMs, events: [at]};
@@ -120,7 +155,7 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
     function finalize(window, force = false) {
         const selected = segments.filter(segment => segment.endAt > window.startAt && segment.startAt < window.endAt);
         const currentSession = session;
-        for (const segment of selected) currentSession?.held.add(segment.name);
+        const release = currentSession ? holdSegments(currentSession, selected) : () => {};
         windows = windows.filter(item => item !== window);
         const operation = renderChain.then(async () => {
             await window.opened;
@@ -157,7 +192,7 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
                 state.warning = 'A motion clip could not be saved. Check available disk space and the recording service.';
             } finally {
                 await fs.unlink(manifest).catch(() => {});
-                for (const segment of selected) currentSession.held.delete(segment.name);
+                release();
             }
             publish('clips', {id: window.id});
         });
@@ -178,6 +213,7 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
         await readSegments();
         for (const window of [...windows]) finalize(window, true);
         await renderChain;
+        await Promise.all([...screenshotTasks]);
         if (session) await removeSession(session.directory);
         session = null;
         segments = [];
@@ -189,7 +225,7 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
         const source = await bridge.recordingUrl(value);
         const directory = path.join(bufferRoot, randomUUID());
         await fs.mkdir(directory, {recursive: true, mode: 0o700});
-        session = {directory, epoch: null, held: new Set(), lastIndex: -1};
+        session = {directory, epoch: null, held: new Map(), lastIndex: -1};
         state.recording = 'warming';
         state.warning = '';
         // Standalone MP4 segments preserve codec initialization data and avoid
@@ -298,7 +334,7 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
         refreshDiscord(value) {discord.configure(value); settingsChecked = 0; announce();},
         async testDiscord() {
             discord.configure(await store.read());
-            try {return await discord.send({test: true});} finally {announce();}
+            try {return await discord.send({test: true, screenshot: () => captureScreenshot(now())});} finally {announce();}
         },
         clipsChanged() {publish('clips', {});},
         // Events are already sanitized and contain no camera credentials or URLs.

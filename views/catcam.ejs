@@ -54,7 +54,7 @@
             <details>
                 <summary><div><h2 id="discord-title">Discord alerts</h2></div><span class="settings-toggle" aria-hidden="true">+</span></summary>
                 <div class="settings-content">
-                    <p class="settings-help">Send “Motion detected on camera, please check” to your Discord channel. Alerts run on the server even when this page is closed. Save changes before testing.</p>
+                    <p class="settings-help">Send “Motion detected on camera, please check” with a screenshot from the motion event to your Discord channel. Alerts run on the server even when this page is closed. Save changes before testing; the test includes a current camera screenshot.</p>
                     <form id="discord-settings">
                         <div class="form-grid">
                             <label>Discord notifications<select name="discordEnabled"><option value="false" <%= !settings?.discordEnabled ? 'selected' : '' %>>Disabled</option><option value="true" <%= settings?.discordEnabled ? 'selected' : '' %>>Enabled</option></select></label>

@@ -69,7 +69,7 @@
         $('#monitor-warning').textContent = state.warning || '';
         if (state.discord) {
             $('#discord-delivery').textContent = state.discord.lastError || (state.discord.lastSentAt ?
-                `Last Discord message: ${date(state.discord.lastSentAt)}` : state.discord.enabled ? 'Discord alerts enabled. Waiting for motion.' : 'Discord alerts disabled.');
+                `Last Discord message: ${date(state.discord.lastSentAt)}${state.discord.lastScreenshot === true ? ' · Screenshot attached' : state.discord.lastScreenshot === false ? ' · Screenshot unavailable' : ''}` : state.discord.enabled ? 'Discord alerts enabled. Waiting for motion.' : 'Discord alerts disabled.');
         }
     }
     function clipLabel(clip) {
