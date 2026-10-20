@@ -10,7 +10,7 @@ const PRE_MS = 10_000, POST_MS = 20_000, MAX_MS = 120_000;
 
 function parseSegments(csv) {
     return csv.trim().split(/\r?\n/).flatMap(line => {
-        const match = line.match(/^"?(part-\d{8}\.ts)"?,(-?[\d.]+),(-?[\d.]+)$/);
+        const match = line.match(/^"?(part-\d{8}\.mp4)"?,(-?[\d.]+),(-?[\d.]+)$/);
         if (!match) return [];
         const start = Number(match[2]), end = Number(match[3]);
         return Number.isFinite(start) && Number.isFinite(end) && end > start ? [{name: match[1], start, end}] : [];
@@ -189,10 +189,12 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
         session = {directory, epoch: null, held: new Set(), lastIndex: -1};
         state.recording = 'warming';
         state.warning = '';
+        // Standalone MP4 segments preserve codec initialization data and avoid
+        // an FFmpeg crash observed when concatenating this C500's MPEG-TS video.
         const child = spawnImpl(ffmpegPath, ['-hide_banner', '-nostdin', '-loglevel', 'error', '-y', '-rw_timeout', '10000000',
             '-i', source, '-map', '0:v:0', '-map', '0:a:0?', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '64k',
-            '-f', 'segment', '-segment_time', '2', '-segment_format', 'mpegts', '-reset_timestamps', '1',
-            '-segment_list', 'segments.csv', '-segment_list_type', 'csv', '-segment_list_size', '120', 'part-%08d.ts'],
+            '-f', 'segment', '-segment_time', '2', '-segment_format', 'mp4', '-reset_timestamps', '1',
+            '-segment_list', 'segments.csv', '-segment_list_type', 'csv', '-segment_list_size', '120', 'part-%08d.mp4'],
         {cwd: directory, windowsHide: true, stdio: ['ignore', 'ignore', 'pipe']});
         recorder = child;
         child.stderr?.on('data', () => {});

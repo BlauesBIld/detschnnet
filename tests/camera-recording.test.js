@@ -87,8 +87,8 @@ test('motion parser handles ONVIF attributes and boolean variants while ignoring
     assert.equal(motionEvent(event('unknown')), null);
     assert.equal(motionEvent({...event(true), topic: {_: 'tns1:Device/Trigger/DigitalInput'}}), null);
     assert.equal(motionEvent({}), null);
-    assert.deepEqual(parseSegments('part-00000001.ts,0.000000,2.000000\npart-00000002.ts,2.000000,4.000000\n../secret.ts,4,6\nincomplete'),
-        [{name: 'part-00000001.ts', start: 0, end: 2}, {name: 'part-00000002.ts', start: 2, end: 4}]);
+    assert.deepEqual(parseSegments('part-00000001.mp4,0.000000,2.000000\npart-00000002.mp4,2.000000,4.000000\n../secret.ts,4,6\nincomplete'),
+        [{name: 'part-00000001.mp4', start: 0, end: 2}, {name: 'part-00000002.mp4', start: 2, end: 4}]);
 });
 
 function execute(args) {
