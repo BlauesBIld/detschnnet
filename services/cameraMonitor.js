@@ -21,7 +21,8 @@ function parseSegments(csv) {
 
 function createCameraMonitor({store, bridge, clips = createClipStore(), now = Date.now,
     ffmpegPath = process.env.CATCAM_FFMPEG_PATH || require('ffmpeg-static'), spawnImpl = spawn,
-    watchMotion = watchCameraMotion, discord = createDiscordAlerts(), preMs = PRE_MS, postMs = POST_MS, maxMs = MAX_MS} = {}) {
+    watchMotion = watchCameraMotion, discord = createDiscordAlerts(), readDiskSpace = () => clips.diskUsage(),
+    preMs = PRE_MS, postMs = POST_MS, maxMs = MAX_MS} = {}) {
     const bus = new EventEmitter();
     bus.setMaxListeners(100);
     const epoch = randomUUID(), history = [];
@@ -29,7 +30,7 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
     const bufferRoot = path.resolve(clips.directory, '../buffer');
     let seq = 0, started = false, stopped = false, initialized = false, ticking = false, interval;
     let settings, fingerprint = '', settingsChecked = 0, sensor, recorder, session, segments = [], windows = [];
-    let motionActive = false, motionTimes = [], broken = false, retryAt = 0, cleanupAt = 0;
+    let motionActive = false, motionTimes = [], broken = false, retryAt = 0, cleanupAt = 0, diskCheckedAt = 0;
     let renderChain = Promise.resolve(), lastState = '';
     const state = {enabled: false, sensor: 'connecting', recording: 'starting', bufferSeconds: 0,
         preSeconds: preMs / 1000, postSeconds: postMs / 1000, retentionDays: 3, lastMotionAt: null, motionActive: false, warning: ''};
@@ -284,14 +285,18 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
                 announce();
             }});
             if (broken && now() < retryAt) return;
-            if (broken || !recorder) {
-                await stopSource({keepSensor: true});
-                broken = false;
-                const disk = await fs.statfs(clips.directory);
-                if (Number(disk.bavail) * Number(disk.bsize) < 512 * 1024 * 1024) {
+            if (broken || !recorder || !diskCheckedAt || now() - diskCheckedAt >= 10_000) {
+                const disk = await readDiskSpace();
+                diskCheckedAt = now();
+                if (disk.availableBytes < 512 * 1024 * 1024) {
+                    await stopSource({keepSensor: true});
                     state.recording = 'error'; state.warning = 'Recording paused: less than 512 MB of free disk space.';
                     retryAt = now() + 30_000; broken = true; announce(); return;
                 }
+            }
+            if (broken || !recorder) {
+                await stopSource({keepSensor: true});
+                broken = false;
                 await startSource(settings);
             }
             await readSegments();
@@ -336,7 +341,10 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
             discord.configure(await store.read());
             try {return await discord.send({test: true, screenshot: () => captureScreenshot(now())});} finally {announce();}
         },
-        clipsChanged() {publish('clips', {});},
+        clipsChanged(change = {}) {
+            if (change.deleted && state.warning === 'Recording paused: less than 512 MB of free disk space.') retryAt = 0;
+            publish('clips', change);
+        },
         // Events are already sanitized and contain no camera credentials or URLs.
         subscribe(listener, after) {
             if (after && history.some(item => item.id === after)) {

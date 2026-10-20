@@ -94,9 +94,9 @@ test('all page, asset, settings and ticket routes require an enabled database ad
     for (const uuid of [null, 'viewer', 'disabled', 'missing']) {
         const cookie = uuid ? s.loginCookie(uuid) : '';
         for (const [url, body] of [['', null], ['/assets/camera.js', null], ['/assets/camera.css', null],
-            ['/assets/motion.js', null], ['/assets/discord.js', null], ['/discord/settings', {}], ['/discord/test', {}], ['/status', null], ['/events', null], ['/clips', null],
+            ['/assets/motion.js', null], ['/assets/discord.js', null], ['/discord/settings', {}], ['/discord/test', {}], ['/status', null], ['/storage', null], ['/events', null], ['/clips', null],
             ['/clips/00000000-0000-4000-8000-000000000001/video', null], ['/clips/00000000-0000-4000-8000-000000000001/poster', null],
-            ['/clips/00000000-0000-4000-8000-000000000001/flag', {flagged: true}], ['/settings', input], ['/ticket', {quality: 'high'}]]) {
+            ['/clips/00000000-0000-4000-8000-000000000001/flag', {flagged: true}], ['/clips/00000000-0000-4000-8000-000000000001/delete', {}], ['/settings', input], ['/ticket', {quality: 'high'}]]) {
             const response = await s.request(url, {cookie, body});
             assert.equal(response.status, uuid ? 403 : 401, `${uuid}: ${url}`);
         }
@@ -349,4 +349,31 @@ test('Discord settings are encrypted, hidden, admin/CSRF protected and independe
     await s.store.save({discordRemove: true}, {discordOnly: true});
     assert.equal((await s.store.read()).discordWebhookUrl, '');
     assert.equal((await s.store.read()).password, input.password);
+});
+
+
+test('disk space is private and manual clip deletion requires admin access and session CSRF', async t => {
+    const s = await setup(t), form = await s.form();
+    const disk = await s.request('/storage', {cookie: form.cookie});
+    assert.equal(disk.status, 200);
+    assert.match(disk.headers.get('cache-control'), /no-store/);
+    const usage = await disk.json();
+    assert.ok(usage.totalBytes > 0 && usage.availableBytes >= 0 && usage.availableBytes <= usage.totalBytes);
+    assert.deepEqual(Object.keys(usage).sort(), ['availableBytes', 'totalBytes']);
+    const clip = await s.recordings.begin({eventAt: Date.now(), startAt: Date.now() - 10000});
+    await fs.writeFile(s.recordings.file(clip.id), 'reviewed-video');
+    await fs.writeFile(s.recordings.file(clip.id, 'jpg'), 'poster');
+    await s.recordings.update(clip.id, {status: 'ready', poster: true});
+    await s.recordings.flag(clip.id, true);
+    assert.equal((await s.request('/clips/'+clip.id+'/delete', {cookie: form.cookie, body: {}})).status, 403);
+    assert.equal((await s.request('/clips/'+clip.id+'/delete', {cookie: form.cookie, body: {csrfToken: '0'.repeat(64)}})).status, 403);
+    assert.equal(await fs.readFile(s.recordings.file(clip.id), 'utf8'), 'reviewed-video');
+    const response = await s.request('/clips/'+clip.id+'/delete', {cookie: form.cookie, body: {csrfToken: form.csrfToken}});
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {deleted: true, id: clip.id});
+    assert.equal((await s.request('/clips/'+clip.id+'/video', {cookie: form.cookie})).status, 404);
+    await assert.rejects(fs.access(s.recordings.file(clip.id, 'jpg')));
+    const active = await s.recordings.begin({eventAt: Date.now(), startAt: Date.now()});
+    assert.equal((await s.request('/clips/'+active.id+'/delete', {cookie: form.cookie, body: {csrfToken: form.csrfToken}})).status, 409);
+    assert.equal((await s.request('/clips/not-a-uuid/delete', {cookie: form.cookie, body: {csrfToken: form.csrfToken}})).status, 404);
 });

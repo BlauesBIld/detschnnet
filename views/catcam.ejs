@@ -71,6 +71,11 @@
             </details>
         </section>
         <section class="recordings-panel" aria-labelledby="recordings-title">
+            <section class="disk-space" aria-labelledby="disk-space-title">
+                <div class="disk-space-heading"><h2 id="disk-space-title">Available disk space</h2><span id="disk-space-summary" role="status" aria-live="polite">Checking disk space…</span></div>
+                <progress id="disk-space-bar" max="100" value="0" aria-labelledby="disk-space-title" aria-describedby="disk-space-summary" hidden></progress>
+                <p id="disk-space-help">Space on the disk used for recordings, shared with the rest of the server.</p>
+            </section>
             <div class="recordings-heading"><div><h2 id="recordings-title">Motion recordings</h2><p>Clips include about 10 seconds before motion and 20 seconds afterward. Unflagged clips expire after 3 days.</p></div>
                 <label class="sr-only" for="clip-filter">Recording filter</label><select id="clip-filter"><option value="all">All recordings</option><option value="flagged">Flagged</option></select></div>
             <p id="clip-feedback" role="status" aria-live="polite"></p>
@@ -83,7 +88,7 @@
                     <input id="clip-seek" type="range" min="0" max="1000" value="0" aria-label="Seek recording"><div id="motion-markers"></div>
                 </div>
                 <div class="timeline-labels"><span id="clip-time">0:00 / 0:00</span><span><span class="motion-key"></span>Motion detected · select a red marker to jump to it</span></div>
-                <div class="playback-actions"><button id="flag-current">Flag to keep</button><a id="download-clip" download>Download MP4</a><span id="clip-expiry"></span></div>
+                <div class="playback-actions"><button id="flag-current">Flag to keep</button><button id="delete-current" class="delete-button">Delete clip</button><a id="download-clip" download>Download MP4</a><span id="clip-expiry"></span></div>
             </section>
         </section>
         <section class="settings-card" aria-labelledby="settings-title">
@@ -112,6 +117,10 @@
             </details>
         </section>
     </main>
+    <dialog id="delete-clip-dialog" aria-labelledby="delete-clip-title" aria-describedby="delete-clip-description">
+        <h2 id="delete-clip-title">Delete recording?</h2><p id="delete-clip-description"></p>
+        <div class="dialog-actions"><button id="cancel-delete" autofocus>Cancel</button><button id="confirm-delete" class="delete-button">Delete permanently</button></div>
+    </dialog>
     <footer>Camera access and recordings are restricted to administrators.</footer>
 </div>
 </body>

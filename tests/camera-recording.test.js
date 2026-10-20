@@ -80,6 +80,39 @@ test('an expired unflagged clip cannot be revived by a late flag request', async
     await assert.rejects(fs.access(store.file(clip.id)));
 });
 
+test('manual deletion removes a reviewed flagged clip and its files without touching other recordings', async t => {
+    const root = await temporary(t), clips = createClipStore({directory: root});
+    const deleted = await clips.begin({eventAt: Date.now(), startAt: Date.now() - 10000});
+    const kept = await clips.begin({eventAt: Date.now() + 1, startAt: Date.now() - 10000});
+    for (const clip of [deleted, kept]) {
+        for (const extension of ['mp4', 'jpg', 'partial.mp4']) await fs.writeFile(clips.file(clip.id, extension), 'data');
+        await clips.update(clip.id, {status: 'ready', poster: true});
+    }
+    await clips.flag(deleted.id, true);
+    const race = await Promise.allSettled([clips.remove(deleted.id), clips.flag(deleted.id, false)]);
+    assert.equal(race[0].status, 'fulfilled');
+    assert.equal(race[1].status, 'rejected');
+    for (const extension of ['mp4', 'jpg', 'partial.mp4']) await assert.rejects(fs.access(clips.file(deleted.id, extension)));
+    assert.equal(await fs.readFile(clips.file(kept.id), 'utf8'), 'data');
+    const restarted = createClipStore({directory: root});
+    assert.equal((await restarted.list()).clips.length, 1);
+    await assert.rejects(restarted.get(deleted.id), error => error.status === 404);
+    await assert.rejects(restarted.remove(deleted.id), error => error.status === 404);
+    for (const id of ['../catalog.json', '../../outside', 'not-an-id']) await assert.rejects(clips.remove(id), error => error.status === 404);
+});
+
+test('clips still being recorded cannot be deleted, and storage reports the recordings filesystem', async t => {
+    const root = await temporary(t), clips = createClipStore({directory: root});
+    const clip = await clips.begin({eventAt: Date.now(), startAt: Date.now() - 10000});
+    await fs.writeFile(clips.file(clip.id, 'partial.mp4'), 'in-progress');
+    await assert.rejects(clips.remove(clip.id), error => error.status === 409);
+    assert.equal(await fs.readFile(clips.file(clip.id, 'partial.mp4'), 'utf8'), 'in-progress');
+    assert.equal((await clips.get(clip.id)).status, 'recording');
+    const disk = await clips.diskUsage();
+    assert.ok(disk.totalBytes > 0 && disk.availableBytes >= 0 && disk.availableBytes <= disk.totalBytes);
+    assert.deepEqual(Object.keys(disk).sort(), ['availableBytes', 'totalBytes']);
+});
+
 test('motion parser handles ONVIF attributes and boolean variants while ignoring unrelated events', () => {
     const event = value => ({topic: {_: 'tns1:RuleEngine/CellMotionDetector/Motion'},
         message: {message: {data: {simpleItem: {$: {Name: 'IsMotion', Value: value}}}}}});
@@ -148,18 +181,19 @@ test('real FFmpeg captures pre/post-event footage, saves playable H.264/AAC MP4 
     const clips = createClipStore({directory: path.join(root, 'recordings')});
     const events = [];
     const uploads = [];
+    let clockOffset = 0, freeBytes = 2 * 1024 ** 3, recorderStarts = 0, sensorStarts = 0;
     const discord = createDiscordAlerts({fetchImpl: async (target, options) => {
         uploads.push({at: Date.now(), body: options.body});
         return new Response('{}', {status: 200});
     }});
     monitor = createCameraMonitor({store: {read: async () => ({host: '192.168.1.50', port: 554, username: 'test', password: 'secret', motionEnabled: true,
         discordEnabled: true, discordWebhookUrl: 'https://discord.com/api/webhooks/123456789012345678/abcdefghijklmnopqrstuvwxyz_0123456789'})},
-        discord,
+        discord, now: () => Date.now() + clockOffset, readDiskSpace: async () => ({totalBytes: 10 * 1024 ** 3, availableBytes: freeBytes}),
         bridge: {recordingUrl: async () => `http://127.0.0.1:${server.address().port}/source.mp4`}, clips, ffmpegPath: ffmpeg,
         preMs: 2000, postMs: 2000, maxMs: 10000,
-        watchMotion: (settings, {onStatus}) => {onStatus('listening'); return {close() {}};},
+        watchMotion: (settings, {onStatus}) => {sensorStarts++; onStatus('listening'); return {close() {}};},
         spawnImpl: (file, args, options) => {
-            if (args.includes('-segment_list')) {args = [...args]; args.splice(args.indexOf('-i'), 0, '-re');}
+            if (args.includes('-segment_list')) {recorderStarts++; args = [...args]; args.splice(args.indexOf('-i'), 0, '-re');}
             return spawn(file, args, options);
         }});
     monitor.subscribe(event => events.push(event));
@@ -192,4 +226,16 @@ test('real FFmpeg captures pre/post-event footage, saves playable H.264/AAC MP4 
     assert.doesNotMatch(JSON.stringify(events), /192\.168|secret|password/);
     await clips.flag(clip.id, true);
     assert.equal((await clips.get(clip.id)).expiresAt, null);
+    freeBytes = 100 * 1024 ** 2;
+    clockOffset = 11000;
+    await monitor.tick();
+    assert.equal(monitor.status().recording, 'error');
+    assert.match(monitor.status().warning, /less than 512 MB/);
+    assert.equal(monitor.status().sensor, 'listening');
+    assert.equal((await fs.stat(clips.file(clip.id))).size, clip.bytes, 'low space preserves flagged recordings');
+    freeBytes = 2 * 1024 ** 3;
+    monitor.clipsChanged({deleted: randomUUID()});
+    await monitor.tick();
+    assert.equal(recorderStarts, 2, 'freeing space resumes recording without waiting for the retry timer');
+    assert.equal(sensorStarts, 1, 'motion detection stays connected while recording is paused');
 });

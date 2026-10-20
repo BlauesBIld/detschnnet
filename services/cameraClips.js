@@ -49,6 +49,16 @@ function createClipStore({directory = path.join(__dirname, '../data/catcam/recor
             if (!validId(id) || !['mp4', 'jpg', 'partial.mp4'].includes(extension)) throw new CameraError('Recording not found.', 404);
             return path.join(root, `${id}.${extension}`);
         },
+        async diskUsage() {
+            try {
+                await fs.mkdir(root, {recursive: true, mode: 0o700});
+                const disk = await fs.statfs(root);
+                const totalBytes = Number(disk.blocks) * Number(disk.bsize);
+                const availableBytes = Math.max(0, Math.min(totalBytes, Number(disk.bavail) * Number(disk.bsize)));
+                if (!Number.isFinite(totalBytes) || totalBytes <= 0 || !Number.isFinite(availableBytes)) throw new Error('Invalid disk statistics');
+                return {totalBytes, availableBytes};
+            } catch {throw new CameraError('Disk space is temporarily unavailable.', 503);}
+        },
         async init() {
             await transaction(async () => {
                 const clips = catalog.clips.map(clip => clip.status === 'recording' ? {...clip, status: 'failed',
@@ -107,6 +117,21 @@ function createClipStore({directory = path.join(__dirname, '../data/catcam/recor
                 const updated = {...clip, flagged};
                 await write({...catalog, clips: catalog.clips.map(item => item.id === id ? updated : item)});
                 return publicClip(updated);
+            });
+        },
+        remove(id) {
+            return transaction(async () => {
+                if (!validId(id)) throw new CameraError('Recording not found.', 404);
+                const clip = catalog.clips.find(item => item.id === id);
+                if (!clip) throw new CameraError('Recording not found.', 404);
+                if (clip.status === 'recording') throw new CameraError('This clip is still being saved. Try again when recording finishes.', 409);
+                // Remove only this catalog entry's generated files. Keep the entry
+                // until all unlinks succeed so a failed deletion can be retried.
+                for (const extension of ['mp4', 'jpg', 'partial.mp4']) {
+                    try {await fs.unlink(this.file(id, extension));} catch (error) {if (error.code !== 'ENOENT') throw error;}
+                }
+                await write({...catalog, clips: catalog.clips.filter(item => item.id !== id)});
+                return {deleted: true, id};
             });
         },
         cleanup() {

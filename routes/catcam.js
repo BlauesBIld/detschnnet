@@ -77,6 +77,9 @@ function createCameraRouter({auth = authentication, store = createCameraStore(),
         catch (error) {next(new CameraError(error.status ? error.message : 'Discord test could not be sent.', error.status || 502));}
     });
     router.get('/status', (req, res) => res.json(monitor.status()));
+    router.get('/storage', async (req, res, next) => {
+        try {res.json(await monitor.clips.diskUsage());} catch (error) {next(error);}
+    });
     router.get('/events', (req, res) => {
         if (feeds.size >= 32) return res.status(503).json({error: 'Too many alert connections. Close another camera tab and try again.'});
         res.set({'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store, private', 'X-Accel-Buffering': 'no'});
@@ -114,6 +117,13 @@ function createCameraRouter({auth = authentication, store = createCameraStore(),
             const clip = await monitor.clips.flag(req.params.id, req.body.flagged);
             monitor.clipsChanged?.();
             res.json(clip);
+        } catch (error) {next(error);}
+    });
+    router.post('/clips/:id/delete', async (req, res, next) => {
+        try {
+            const result = await monitor.clips.remove(req.params.id);
+            monitor.clipsChanged?.({deleted: result.id});
+            res.json(result);
         } catch (error) {next(error);}
     });
     for (const [route, extension, type] of [['video', 'mp4', 'video/mp4'], ['poster', 'jpg', 'image/jpeg']]) {

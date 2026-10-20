@@ -184,6 +184,19 @@ the flag from an already-old clip makes it expire immediately; the next cleanup
 removes its files. Flags survive website restarts. The **Flagged** filter lists
 preserved recordings.
 
+The **Available disk space** bar shows space available to the website on the
+filesystem holding the recordings. This disk is shared with the rest of the
+server; it is not a camera-only quota. The display refreshes every 15 seconds and
+after deleting a clip. Low space changes the bar's colour; recording pauses below
+512 MB available.
+
+Use **Delete clip** on a recording card or in playback after reviewing it. Confirm
+the dialog to permanently remove the video, thumbnail and recording-list entry.
+Flagged recordings can also be deleted manually, with their flag highlighted in
+the confirmation. Clips still being saved cannot be deleted. Other open camera
+pages update their lists and close playback of the deleted clip. Local deletion
+does not delete screenshots already posted to Discord.
+
 Files live outside public assets in `data/catcam/recordings/`; the short rolling
 buffer lives in `data/catcam/buffer/`. Both are excluded from Git. All clip lists,
 videos, thumbnails, flags, status and event streams require enabled admin access.

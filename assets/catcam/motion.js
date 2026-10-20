@@ -8,6 +8,8 @@
     const date = timestamp => new Date(timestamp).toLocaleString();
     const duration = seconds => `${Math.floor(Math.max(0, seconds) / 60)}:${String(Math.floor(Math.max(0, seconds) % 60)).padStart(2, '0')}`;
     let notifications = false, lastAlertAt = 0, selected, nextBefore, refreshTimer, loading = false, reloadRequested = false;
+    let pendingDelete, deleting = false, storageLoading = false, storageTimer, pageClosed = false;
+    const deleteDialog = $('#delete-clip-dialog');
     const seenEvents = new Set();
     try {notifications = localStorage.getItem('camera-desktop-alerts') === 'true';} catch {}
 
@@ -55,6 +57,29 @@
             'Admin access expired. Sign in again and reload this page.' : json.error || 'The recordings could not be loaded.');
         return json;
     }
+    function storageSize(bytes) {
+        const unit = bytes >= 1e12 ? 'TB' : bytes >= 1e9 ? 'GB' : 'MB';
+        const divisor = unit === 'TB' ? 1e12 : unit === 'GB' ? 1e9 : 1e6;
+        return `${(bytes / divisor).toLocaleString(undefined, {maximumFractionDigits: 1})} ${unit}`;
+    }
+    async function loadStorage() {
+        if (storageLoading || pageClosed) return;
+        storageLoading = true;
+        const bar = $('#disk-space-bar');
+        try {
+            const {totalBytes, availableBytes} = await request('/catcam/storage');
+            if (!Number.isFinite(totalBytes) || totalBytes <= 0 || !Number.isFinite(availableBytes)) throw new Error('Disk space is unavailable.');
+            const percent = Math.max(0, Math.min(100, availableBytes / totalBytes * 100));
+            bar.value = percent;
+            bar.hidden = false;
+            bar.dataset.level = availableBytes < 512 * 1024 * 1024 || percent < 5 ? 'critical' : percent < 10 ? 'low' : 'normal';
+            $('#disk-space-summary').textContent = `${storageSize(availableBytes)} available of ${storageSize(totalBytes)} (${Math.round(percent)}%)`;
+            $('#disk-space-help').textContent = bar.dataset.level === 'critical' ?
+                'Disk space is low. Recording pauses below 512 MB available; delete reviewed clips to free space.' :
+                'Space on the disk used for recordings, shared with the rest of the server.';
+        } catch (error) {bar.hidden = true; $('#disk-space-summary').textContent = error.message;}
+        finally {storageLoading = false; clearTimeout(storageTimer); if (!pageClosed) storageTimer = setTimeout(loadStorage, 15000);}
+    }
     function monitorStatus(state) {
         let text;
         if (!state.enabled) text = 'Motion monitoring is disabled.';
@@ -78,6 +103,32 @@
         return `${duration(clip.duration)} · ${(clip.bytes / (1024 * 1024)).toFixed(1)} MB${clip.truncated ? ' · Partial clip' : ''}`;
     }
     function flagLabel(clip) {return clip.flagged ? 'Flagged — keep' : 'Flag to keep';}
+    function closePlayback() {selected = null; video.pause(); video.removeAttribute('src'); video.load(); playback.hidden = true;}
+    function confirmDelete(clip) {
+        if (clip.status === 'recording' || deleting) return;
+        pendingDelete = clip;
+        $('#delete-clip-description').textContent = `Permanently delete the recording from ${date(clip.eventAt)} and its thumbnail?${clip.flagged ? ' This recording is flagged to keep.' : ''} This cannot be undone.`;
+        deleteDialog.showModal();
+    }
+    deleteDialog.addEventListener('cancel', event => {if (deleting) event.preventDefault();});
+    deleteDialog.addEventListener('close', () => {pendingDelete = null;});
+    $('#cancel-delete').addEventListener('click', () => deleteDialog.close());
+    $('#confirm-delete').addEventListener('click', async () => {
+        if (!pendingDelete || deleting) return;
+        const clip = pendingDelete;
+        deleting = true;
+        $('#confirm-delete').disabled = true;
+        $('#cancel-delete').disabled = true;
+        feedback.textContent = '';
+        try {
+            if (selected?.id === clip.id) closePlayback();
+            await request(`/catcam/clips/${clip.id}/delete`, {});
+            deleteDialog.close();
+            await Promise.all([loadClips(), loadStorage()]);
+            feedback.textContent = 'Recording deleted.';
+        } catch (error) {deleteDialog.close(); feedback.textContent = error.message;}
+        finally {deleting = false; $('#confirm-delete').disabled = false; $('#cancel-delete').disabled = false;}
+    });
     async function flagClip(clip, button) {
         button.disabled = true;
         feedback.textContent = '';
@@ -118,7 +169,14 @@
         flag.textContent = flagLabel(clip);
         flag.className = clip.flagged ? 'flag-button is-flagged' : 'flag-button';
         flag.addEventListener('click', () => flagClip(clip, flag));
-        details.append(when, description, flag);
+        const remove = document.createElement('button');
+        remove.textContent = 'Delete clip';
+        remove.className = 'flag-button delete-button';
+        remove.disabled = clip.status === 'recording';
+        remove.setAttribute('aria-label', `Delete recording from ${date(clip.eventAt)}`);
+        remove.addEventListener('click', () => confirmDelete(clip));
+        const actions = document.createElement('div'); actions.className = 'clip-actions'; actions.append(flag, remove);
+        details.append(when, description, actions);
         card.append(open, details);
         return card;
     }
@@ -195,10 +253,12 @@
     video.addEventListener('error', () => {if (selected) feedback.textContent = 'This recording is unavailable or has expired. Refresh the recording list.';});
     $('#clip-seek').addEventListener('input', event => {if (selected) video.currentTime = Number(event.target.value) / 1000 * actualDuration();});
     $('#flag-current').addEventListener('click', event => {if (selected) flagClip(selected, event.currentTarget);});
-    $('#close-clip').addEventListener('click', () => {selected = null; video.pause(); video.removeAttribute('src'); video.load(); playback.hidden = true;});
+    $('#delete-current').addEventListener('click', () => {if (selected) confirmDelete(selected);});
+    $('#close-clip').addEventListener('click', closePlayback);
     $('#clip-filter').addEventListener('change', () => loadClips());
     $('#more-clips').addEventListener('click', () => loadClips(true));
     loadClips();
+    loadStorage();
 
     const events = new EventSource('/catcam/events');
     events.addEventListener('status', event => {try {monitorStatus(JSON.parse(event.data));} catch {}});
@@ -208,8 +268,11 @@
         if (seenEvents.size > 160) seenEvents.delete(seenEvents.values().next().value);
         try {const {at, recording} = JSON.parse(event.data); notify(at, false, recording); $('#last-motion').textContent = `Last motion: ${date(at)}`;} catch {}
     });
-    events.addEventListener('clips', scheduleRefresh);
+    events.addEventListener('clips', event => {
+        try {if (selected?.id === JSON.parse(event.data).deleted) closePlayback();} catch {}
+        scheduleRefresh(); loadStorage();
+    });
     events.onopen = () => {scheduleRefresh();};
     events.onerror = () => {$('#monitor-status').textContent = 'Alert connection interrupted. Reconnecting…';};
-    window.addEventListener('pagehide', () => {events.close(); clearTimeout(refreshTimer);});
+    window.addEventListener('pagehide', () => {pageClosed = true; events.close(); clearTimeout(refreshTimer); clearTimeout(storageTimer);});
 })();
