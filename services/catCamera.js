@@ -9,21 +9,6 @@ class CameraError extends Error {
     constructor(message, status = 400) {super(message); this.status = status;}
 }
 
-function cameraStreamError(reason = '') {
-    // Classify privately, then return fixed text. Raw bridge errors can contain
-    // camera credentials and must never be sent back to the browser.
-    if (/connection refused|ECONNREFUSED/i.test(reason)) {
-        return {type: 'error', retryable: false,
-            value: 'The saved camera address is refusing its RTSP connection. Check the IP in Tapo Device Info and create or enable its Camera Account under Advanced Settings, then try again.'};
-    }
-    if (/\b401\b|unauthorized|authentication failed|wrong.*password/i.test(reason)) {
-        return {type: 'error', retryable: false,
-            value: 'The camera rejected its login. Save the separate Tapo Camera Account username and password in Connection settings, then try again.'};
-    }
-    return {type: 'error', retryable: true,
-        value: 'The camera stream is unavailable. Check its power, network and Camera Account settings.'};
-}
-
 function validateSettings(input, previous = {}) {
     const title = typeof input.title === 'string' ? input.title.trim() : '';
     const host = typeof input.host === 'string' ? input.host.trim() : '';
@@ -41,7 +26,9 @@ function validateSettings(input, previous = {}) {
         throw new CameraError('Enter the Camera Account password created in Tapo.');
     }
     if (!['high', 'low'].includes(input.quality)) throw new CameraError('Choose a video quality.');
-    return {title, host, port, username, password, quality: input.quality};
+    const motionEnabled = input.motionEnabled === undefined ? previous.motionEnabled ?? true : input.motionEnabled;
+    if (![true, false, 'true', 'false'].includes(motionEnabled)) throw new CameraError('Choose whether motion monitoring is enabled.');
+    return {title, host, port, username, password, quality: input.quality, motionEnabled: motionEnabled === true || motionEnabled === 'true'};
 }
 
 function createCameraStore({filename = path.join(__dirname, '../data/catcam/settings.enc'),
@@ -121,6 +108,13 @@ function createCameraBridge({baseUrl = process.env.CATCAM_BRIDGE_URL || 'http://
             url.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
             url.searchParams.set('src', name);
             return url.href;
+        },
+        async recordingUrl(settings) {
+            const stream = new URL(await this.prepare(settings, 'high'));
+            const url = new URL('/api/stream.mp4', base);
+            url.searchParams.set('src', stream.searchParams.get('src'));
+            url.searchParams.set('mp4', 'flac');
+            return url.href;
         }
     };
 }
@@ -177,9 +171,9 @@ function createCameraStreams({ticketLifetime = 15_000, streamLifetime = 30 * 60_
                     }, accessInterval);
                     accessTimer.unref();
                     function stop() {clearTimeout(timer); clearInterval(accessTimer); upstream.terminate();}
-                    function fail(reason = '') {
+                    function fail() {
                         if (client.readyState === WebSocket.OPEN) {
-                            client.send(JSON.stringify(cameraStreamError(typeof reason === 'string' ? reason : '')));
+                            client.send(JSON.stringify({type: 'error', value: 'The camera stream is unavailable. Check its power, network and Camera Account settings.'}));
                             client.close(1011, 'Camera unavailable');
                         }
                     }
@@ -202,7 +196,7 @@ function createCameraStreams({ticketLifetime = 15_000, streamLifetime = 30 * 60_
                         let message;
                         try {message = JSON.parse(data.toString());} catch {return fail();}
                         // Never forward raw bridge errors: they can contain source credentials.
-                        if (message.type === 'error') return fail(message.value);
+                        if (message.type === 'error') return fail();
                         if (message.type === 'mse' && typeof message.value === 'string' &&
                             /^video\/mp4; codecs="[a-zA-Z0-9., ]+"$/.test(message.value) && message.value.length < 512) {
                             client.send(JSON.stringify({type: 'mse', value: message.value}));

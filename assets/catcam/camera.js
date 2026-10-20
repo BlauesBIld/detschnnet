@@ -57,7 +57,7 @@
         if (attempt !== generation || !wanted) return;
         generation++;
         cleanup();
-        if (error?.actionRequired || [401, 403, 409].includes(error?.status)) {
+        if ([401, 403, 409].includes(error?.status)) {
             stop();
             message.textContent = error.message;
             status('Access or setup needed', 'error');
@@ -124,11 +124,7 @@
                 try {
                     if (typeof event.data === 'string') {
                         const data = JSON.parse(event.data);
-                        if (data.type === 'error') {
-                            const error = new Error(data.value);
-                            error.actionRequired = data.retryable === false;
-                            return retry(error, attempt);
-                        }
+                        if (data.type === 'error') return retry(new Error(data.value), attempt);
                         if (data.type !== 'mse' || sourceBuffer) return;
                         if (!Media.isTypeSupported(data.value)) throw new Error('Unsupported codec');
                         sourceBuffer = currentMedia.addSourceBuffer(data.value);
@@ -204,12 +200,11 @@
             form.elements.password.value = '';
             form.elements.password.required = false;
             form.elements.password.placeholder = 'Leave blank to keep saved password';
-            document.querySelector('#camera-title').textContent = result.title;
             document.title = `${result.title} · DetschnNet`;
             quality.value = result.quality;
             start.disabled = false;
-            document.querySelector('#empty-title').textContent = 'Ready when you are';
-            document.querySelector('#empty-description').textContent = 'Start the live view to see what they’re up to.';
+            document.querySelector('#empty-title').textContent = 'Camera ready';
+            document.querySelector('#empty-description').textContent = 'Start live view to monitor the camera.';
             message.textContent = '';
             feedback.textContent = 'Settings saved. Start the live view to test your camera.';
         } catch (error) {feedback.classList.add('error'); feedback.textContent = error.message;}

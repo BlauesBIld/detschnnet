@@ -4,10 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
-    <title><%= settings?.title || 'Cat cam' %> · DetschnNet</title>
+    <title><%= settings?.title || 'Camera' %> · DetschnNet</title>
     <link rel="icon" href="/img/mage.png">
     <link rel="stylesheet" href="/catcam/assets/camera.css">
     <script src="/catcam/assets/camera.js" defer></script>
+    <script src="/catcam/assets/motion.js" defer></script>
 </head>
 <body>
 <div class="shell">
@@ -15,19 +16,14 @@
         <a class="brand" href="/">Detschn<span>Net</span></a>
         <div class="navigation-links"><a href="/streamer/">Dashboard</a><span class="admin-badge">Admin only</span></div>
     </nav>
-    <header class="heading">
-        <div><p class="eyebrow">A little window into their world</p><h1 id="camera-title"><%= settings?.title || 'Cat cam' %></h1>
-            <p class="intro">Check in on your favourite little housemate.</p></div>
-        <span class="account"><span class="account-dot"></span><%= loggedInUser.username %></span>
-    </header>
     <main>
         <section class="watch-panel" aria-label="Live camera">
             <div class="player" id="player">
                 <video id="video" playsinline muted controls hidden aria-label="Live cat camera"></video>
                 <div class="placeholder" id="placeholder">
-                    <svg class="cat" viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M23 46 20 16l27 18h6l27-18-3 30c8 7 12 16 10 25-3 15-18 23-37 23S16 86 13 71c-2-9 2-18 10-25Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M32 61h1m34 0h1M45 72l5 4 5-4M22 73 7 69m16 12L7 84m71-11 15-4m-16 12 16 3" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
-                    <h2 id="empty-title"><%= settings ? 'Ready when you are' : 'Meet your new cat cam' %></h2>
-                    <p id="empty-description"><%= settings ? 'Start the live view to see what they’re up to.' : 'Add your camera details below to get started.' %></p>
+                    <svg class="camera-icon" viewBox="0 0 80 60" fill="none" aria-hidden="true"><rect x="8" y="12" width="44" height="36" rx="5" stroke="currentColor" stroke-width="3"/><path d="m52 23 19-10v34L52 37" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><circle cx="29" cy="30" r="9" stroke="currentColor" stroke-width="3"/></svg>
+                    <h2 id="empty-title"><%= settings ? 'Camera ready' : 'Configure camera' %></h2>
+                    <p id="empty-description"><%= settings ? 'Start live view to monitor the camera.' : 'Enter the camera connection details below.' %></p>
                 </div>
                 <span class="video-label" id="video-label" hidden><span></span>LIVE VIEW</span>
             </div>
@@ -47,6 +43,28 @@
             <div class="privacy-note"><span class="lock" aria-hidden="true">&#128274;</span><div><strong>Just for your admins</strong><p>The live view and camera settings require an active admin account.</p></div></div>
             <p class="quiet-note">Live view starts muted. Use the video controls for sound when available.</p>
         </div>
+        <section class="motion-panel" aria-label="Motion monitoring">
+            <div><h2>Motion monitoring</h2><p id="monitor-status" role="status" aria-live="polite">Connecting to monitoring service…</p>
+                <p id="last-motion">No motion received in this session.</p><p>Keep Motion Detection enabled in the Tapo app.</p><p id="monitor-warning" class="stream-message" role="alert"></p></div>
+            <div class="alert-controls"><button id="enable-notifications">Enable desktop alerts</button><button id="test-notification" hidden>Test alert</button>
+                <small id="notification-help">Keep this page open to receive desktop alerts.</small></div>
+        </section>
+        <section class="recordings-panel" aria-labelledby="recordings-title">
+            <div class="recordings-heading"><div><h2 id="recordings-title">Motion recordings</h2><p>Clips include about 10 seconds before motion and 20 seconds afterward. Unflagged clips expire after 3 days.</p></div>
+                <label class="sr-only" for="clip-filter">Recording filter</label><select id="clip-filter"><option value="all">All recordings</option><option value="flagged">Flagged</option></select></div>
+            <p id="clip-feedback" role="status" aria-live="polite"></p>
+            <div id="clip-list" class="clip-list"></div><p id="clips-empty">Loading recordings…</p>
+            <button id="more-clips" hidden>Load older clips</button>
+            <section id="clip-playback" class="clip-playback" aria-label="Recording playback" hidden>
+                <div class="playback-heading"><h3 id="clip-title">Recording</h3><button id="close-clip">Close playback</button></div>
+                <video id="clip-video" controls playsinline preload="metadata" aria-label="Recorded motion clip"></video>
+                <div class="motion-timeline" id="motion-timeline" aria-label="Clip timeline with motion markers">
+                    <input id="clip-seek" type="range" min="0" max="1000" value="0" aria-label="Seek recording"><div id="motion-markers"></div>
+                </div>
+                <div class="timeline-labels"><span id="clip-time">0:00 / 0:00</span><span><span class="motion-key"></span>Motion detected · select a red marker to jump to it</span></div>
+                <div class="playback-actions"><button id="flag-current">Flag to keep</button><a id="download-clip" download>Download MP4</a><span id="clip-expiry"></span></div>
+            </section>
+        </section>
         <section class="settings-card" aria-labelledby="settings-title">
             <details id="settings-details" <%= !settings || setupError ? 'open' : '' %>>
                 <summary><div><span class="eyebrow">Your camera</span><h2 id="settings-title">Connection settings</h2></div><span class="settings-toggle" aria-hidden="true">+</span></summary>
@@ -58,12 +76,13 @@
                     <form id="camera-settings" data-configured="<%= Boolean(settings) %>">
                         <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
                         <div class="form-grid">
-                            <label>Camera name<input name="title" value="<%= settings?.title || 'Cat cam' %>" maxlength="80" required autocomplete="off"></label>
+                            <label>Camera name<input name="title" value="<%= settings?.title || 'Camera' %>" maxlength="80" required autocomplete="off"></label>
                             <label>Default quality<select name="quality"><option value="high" <%= settings?.quality !== 'low' ? 'selected' : '' %>>High quality</option><option value="low" <%= settings?.quality === 'low' ? 'selected' : '' %>>Low bandwidth</option></select></label>
                             <label>Camera IP address<input name="host" value="<%= settings?.host || '' %>" placeholder="192.168.1.50" required autocomplete="off" inputmode="decimal"></label>
                             <label>RTSP port<input name="port" type="number" value="<%= settings?.port || 554 %>" min="1" max="65535" required></label>
                             <label>Camera username<input name="username" value="<%= settings?.username || '' %>" maxlength="64" required autocomplete="off" autocapitalize="none" spellcheck="false"></label>
                             <label>Camera password<input name="password" type="password" maxlength="128" autocomplete="new-password" <%= settings ? '' : 'required' %> placeholder="<%= settings ? 'Leave blank to keep saved password' : 'Your Tapo Camera Account password' %>"></label>
+                            <label>Motion monitoring and recording<select name="motionEnabled"><option value="true" <%= settings?.motionEnabled !== false ? 'selected' : '' %>>Enabled</option><option value="false" <%= settings?.motionEnabled === false ? 'selected' : '' %>>Disabled</option></select></label>
                         </div>
                         <div class="form-footer"><p>Credentials are encrypted on the server. Your saved password is never displayed.</p><button class="primary" id="save" <%= !storageReady || setupError ? 'disabled' : '' %>>Save settings</button></div>
                         <p id="save-message" class="save-message" role="status" aria-live="polite"></p>
@@ -72,7 +91,7 @@
             </details>
         </section>
     </main>
-    <footer>Tapo C500 · A quiet place to check in.</footer>
+    <footer>Camera access and recordings are restricted to administrators.</footer>
 </div>
 </body>
 </html>

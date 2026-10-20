@@ -106,5 +106,13 @@ app.use(errorHandler);
 const server = app.listen(port, () => {
     console.log(`Listening at http://localhost:${port}/workout`);
     require('./services/nightbotTokenRenewal').start();
+    catCamera.startMonitoring();
 });
 catCamera.attach(server);
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+    process.once(signal, () => {
+        const timeout = setTimeout(() => process.exit(0), 7000);
+        timeout.unref();
+        catCamera.stopMonitoring().finally(() => process.exit(0));
+    });
+}

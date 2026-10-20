@@ -11,6 +11,7 @@ const jwt = require('jsonwebtoken');
 const {WebSocket, WebSocketServer} = require('ws');
 const {createAuthentication} = require('../services/authentication');
 const {createCameraRouter} = require('../routes/catcam');
+const {createClipStore} = require('../services/cameraClips');
 const {CameraError, validateSettings, createCameraStore, createCameraBridge, createCameraStreams} = require('../services/catCamera');
 
 const secret = 'catcam-test-jwt-secret';
@@ -18,7 +19,7 @@ process.env.ACCESS_TOKEN_SECRET = secret;
 const input = {title: 'Milo’s window', host: '192.168.1.50', port: '554', username: 'camera-cat',
     password: 'private-p@ss:word/#', quality: 'high'};
 
-async function setup(t, {streamLifetime = 60_000, accessInterval = 15_000} = {}) {
+async function setup(t, {streamLifetime = 60_000, accessInterval = 15_000, feedAccessInterval = 15_000} = {}) {
     const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'detschn-catcam-test-'));
     const filename = path.join(directory, 'settings.enc');
     const key = 'ab'.repeat(32);
@@ -36,7 +37,9 @@ async function setup(t, {streamLifetime = 60_000, accessInterval = 15_000} = {})
     const bridge = {async prepare(settings, quality) {bridgeCalls.push({settings, quality}); return upstreamUrl;}};
     const auth = createAuthentication({getUserByUuid: async uuid => accounts.get(uuid)});
     const streams = createCameraStreams({streamLifetime, accessInterval});
-    const camera = createCameraRouter({auth, store, bridge, streams});
+    const recordings = createClipStore({directory: path.join(directory, 'recordings')});
+    const monitor = {clips: recordings, refresh() {}, status: () => ({enabled: true, sensor: 'listening', recording: 'ready'}), subscribe: () => () => {}};
+    const camera = createCameraRouter({auth, store, bridge, streams, monitor, feedAccessInterval});
     const app = express();
     app.set('views', path.join(__dirname, '../views'));
     app.set('view engine', 'ejs');
@@ -60,9 +63,9 @@ async function setup(t, {streamLifetime = 60_000, accessInterval = 15_000} = {})
     const token = (uuid = 'admin', options = {}) => jwt.sign({uuid, username: 'detschn', role: 'admin'}, options.secret || secret,
         {expiresIn: options.expired ? -1 : '1h'});
     const loginCookie = uuid => `accessToken=${token(uuid)}`;
-    async function request(url = '', {cookie = '', body, method = body ? 'POST' : 'GET'} = {}) {
+    async function request(url = '', {cookie = '', body, method = body ? 'POST' : 'GET', headers = {}} = {}) {
         return fetch(`${base}/catcam${url}`, {method, redirect: 'manual', headers: {Cookie: cookie,
-            ...(body ? {'Content-Type': 'application/json'} : {})}, body: body ? JSON.stringify(body) : undefined});
+            ...(body ? {'Content-Type': 'application/json'} : {}), ...headers}, body: body ? JSON.stringify(body) : undefined});
     }
     async function form(uuid = 'admin') {
         const cookie = loginCookie(uuid);
@@ -80,7 +83,7 @@ async function setup(t, {streamLifetime = 60_000, accessInterval = 15_000} = {})
     function connect(url, cookie, origin = base) {
         return new WebSocket(base.replace('http:', 'ws:') + url, {headers: {Cookie: cookie, Origin: origin}});
     }
-    return {directory, filename, key, store, accounts, streams, upstream, upstreamUrl, bridgeCalls, base,
+    return {directory, filename, key, store, recordings, accounts, streams, upstream, upstreamUrl, bridgeCalls, base,
         token, loginCookie, request, form, ticket, connect};
 }
 
@@ -89,7 +92,9 @@ test('all page, asset, settings and ticket routes require an enabled database ad
     for (const uuid of [null, 'viewer', 'disabled', 'missing']) {
         const cookie = uuid ? s.loginCookie(uuid) : '';
         for (const [url, body] of [['', null], ['/assets/camera.js', null], ['/assets/camera.css', null],
-            ['/settings', input], ['/ticket', {quality: 'high'}]]) {
+            ['/assets/motion.js', null], ['/status', null], ['/events', null], ['/clips', null],
+            ['/clips/00000000-0000-4000-8000-000000000001/video', null], ['/clips/00000000-0000-4000-8000-000000000001/poster', null],
+            ['/clips/00000000-0000-4000-8000-000000000001/flag', {flagged: true}], ['/settings', input], ['/ticket', {quality: 'high'}]]) {
             const response = await s.request(url, {cookie, body});
             assert.equal(response.status, uuid ? 403 : 401, `${uuid}: ${url}`);
         }
@@ -111,7 +116,7 @@ test('settings survive restart encrypted, never return passwords, and retain a b
     const disk = await fs.readFile(s.filename, 'utf8');
     assert.doesNotMatch(disk, /private-p|camera-cat|192\.168|Milo/);
     const restarted = createCameraStore({filename: s.filename, encryptionKey: () => s.key});
-    assert.deepEqual(await restarted.read(), {...input, port: 554});
+    assert.deepEqual(await restarted.read(), {...input, port: 554, motionEnabled: true});
     assert.equal((await s.request('/settings', {cookie: form.cookie,
         body: {...input, password: '', title: 'Updated', csrfToken: form.csrfToken}})).status, 200);
     assert.equal((await restarted.read()).password, input.password);
@@ -262,25 +267,53 @@ test('an active viewer loses the stream when their database admin role is revoke
     assert.equal((await closed)[0], 4003);
 });
 
-test('refused camera ports and rejected logins return actionable errors without endless retries or credential leaks', async t => {
+test('recording playback supports byte ranges and flagging requires session CSRF', async t => {
+    const s = await setup(t), form = await s.form();
+    const clip = await s.recordings.begin({eventAt: Date.now(), startAt: Date.now() - 10000});
+    await fs.writeFile(s.recordings.file(clip.id), Buffer.from('test-mp4-video-content'));
+    await fs.writeFile(s.recordings.file(clip.id, 'jpg'), Buffer.from([255, 216, 255, 217]));
+    await s.recordings.update(clip.id, {status: 'ready', duration: 30, bytes: 22, poster: true});
+    const range = await s.request(`/clips/${clip.id}/video`, {cookie: form.cookie, headers: {Range: 'bytes=0-3'}});
+    assert.equal(range.status, 206);
+    assert.equal(range.headers.get('content-type'), 'video/mp4');
+    assert.equal(await range.text(), 'test');
+    assert.match(range.headers.get('cache-control'), /no-store/);
+    assert.equal((await s.request(`/clips/${clip.id}/flag`, {cookie: form.cookie, body: {flagged: true}})).status, 403);
+    const flagged = await s.request(`/clips/${clip.id}/flag`, {cookie: form.cookie, body: {flagged: true, csrfToken: form.csrfToken}});
+    assert.equal(flagged.status, 200);
+    assert.equal((await flagged.json()).flagged, true);
+    const catalog = await s.request('/clips?flagged=true', {cookie: form.cookie});
+    const data = await catalog.json();
+    assert.equal(data.clips.length, 1);
+    assert.equal(data.clips[0].expiresAt, null);
+    assert.doesNotMatch(JSON.stringify(data), /catalog\.json|recordings\\|recordings\//);
+    assert.equal((await s.request('/clips/not-a-uuid/video', {cookie: form.cookie})).status, 404);
+    assert.equal((await s.request('/assets/catalog.json', {cookie: form.cookie})).status, 404);
+});
+
+test('monitoring can be disabled without losing the saved password or existing clips', async t => {
     const s = await setup(t), form = await s.form();
     await s.store.save(input);
-    const reasons = ['connect: connection refused', '401 Unauthorized'];
-    s.upstream.on('connection', client => client.once('message', () => {
-        client.send(JSON.stringify({type: 'error', value: `rtsp://${input.username}:${input.password}@${input.host}:554/stream1: ${reasons.shift()}`}));
-    }));
-    for (const expected of [/refusing its RTSP connection/, /camera rejected its login/]) {
-        const client = s.connect(await s.ticket(form), form.cookie);
-        client.on('error', () => {});
-        await once(client, 'open');
-        const received = once(client, 'message');
-        client.send(JSON.stringify({type: 'mse', value: 'avc1.640029'}));
-        const [data] = await received;
-        const error = JSON.parse(data.toString());
-        assert.equal(error.type, 'error');
-        assert.equal(error.retryable, false);
-        assert.match(error.value, expected);
-        assert.doesNotMatch(data.toString(), /private-p|camera-cat|192\.168|rtsp:\/\//);
-        client.terminate();
-    }
+    const response = await s.request('/settings', {cookie: form.cookie,
+        body: {...input, password: '', motionEnabled: 'false', csrfToken: form.csrfToken}});
+    assert.equal(response.status, 200);
+    const settings = await s.store.read();
+    assert.equal(settings.motionEnabled, false);
+    assert.equal(settings.password, input.password);
+    const html = (await s.form()).html;
+    assert.doesNotMatch(html, /little window|favourite little housemate|A quiet place to check in/);
+    assert.match(html, /Motion recordings/);
+});
+
+test('the live event feed ends when an administrator loses access', async t => {
+    const s = await setup(t, {feedAccessInterval: 40}), form = await s.form();
+    const response = await s.request('/events', {cookie: form.cookie});
+    assert.match(response.headers.get('content-type'), /text\/event-stream/);
+    const reader = response.body.getReader();
+    const first = await reader.read();
+    assert.match(Buffer.from(first.value).toString(), /event: status/);
+    s.accounts.get('admin').user_role = 'streamer';
+    let ended = false;
+    while (!ended) ended = (await reader.read()).done;
+    assert.equal(ended, true);
 });

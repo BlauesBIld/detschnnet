@@ -19,6 +19,8 @@ There is no need for a cloud subscription or camera port forwarding.
    IPv4 addresses in 10/8, 172.16/12 or 192.168/16; the server must be able to reach it.
 4. Keep the camera powered, Privacy Mode off while viewing, and its siren/light
    alarm off if you don't want it startling your cat.
+5. Enable **Motion Detection** in the Tapo app. The server listens to the camera's
+   ONVIF events on local port 2020, using the same separate Camera Account.
 
 ## 2. Run go2rtc on the home server
 
@@ -52,7 +54,10 @@ instead needs a private container network and an appropriate bridge URL.
 
 ## 3. Configure the website
 
-Install dependencies with `npm install`. Generate a random 32-byte encryption key:
+Install dependencies with `npm install`. This includes the ONVIF client and an
+FFmpeg binary for the server's operating system; no sudo installation is needed.
+An existing compatible binary can be selected using `CATCAM_FFMPEG_PATH`.
+Generate a random 32-byte encryption key:
 
 ```sh
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
@@ -73,6 +78,22 @@ settings unreadable; restore the matching key, or move the old encrypted file
 aside and configure the camera again. Do not copy a production `.env` into chat.
 
 ## 4. Allow WebSockets through your HTTPS reverse proxy
+
+The current home server uses Apache. Put the specific WebSocket route before the
+existing catch-all website proxy in its HTTPS virtual host:
+
+```apache
+ProxyPreserveHost On
+ProxyPass /catcam/live http://127.0.0.1:13061/catcam/live upgrade=websocket timeout=90
+ProxyPassReverse /catcam/live http://127.0.0.1:13061/catcam/live
+ProxyPass / http://127.0.0.1:13061/
+ProxyPassReverse / http://127.0.0.1:13061/
+```
+
+The normal HTTP proxy carries the motion-event feed, thumbnails and MP4 playback,
+including byte-range seeking. Do not cache `/catcam` or its subroutes. The event
+feed sends a heartbeat every 15 seconds. The existing Apache setup already has
+these routes; motion recording does not need another public port.
 
 For Nginx, add this location inside the existing HTTPS virtual host. Retain your
 normal HTTPS setup and existing locations. The website listens on port 13061:
@@ -111,8 +132,8 @@ value. It is never sent back to the browser.
 
 Video starts muted and offers native audio controls for compatible camera audio.
 Unsupported audio tracks are omitted rather than transcoded. This feature does
-not provide two-way talk, pan/tilt, recording or Tapo detection configuration.
-Use the Tapo app for those functions. Viewing only starts on demand, pauses when
+not provide two-way talk, pan/tilt or Tapo detection configuration.
+Use the Tapo app for those functions. Live viewing starts on demand, pauses when
 the browser tab is hidden, and reconnects on interruptions. Modern Chrome, Edge
 and Firefox support MSE; recent Safari uses ManagedMediaSource (Safari 17.1+ on
 iPhone). Older browsers without either API show a compatibility message.
@@ -132,6 +153,47 @@ or the bridge's stream-registration query strings: these contain credentials.
 No camera password or raw bridge error is returned to a viewer. A saved-settings
 confirmation confirms storage only; actual camera connectivity is tested by
 starting live view.
+
+## 6. Motion alerts and recordings
+
+Motion monitoring and recording default to **Enabled** in Connection settings.
+The website process continuously maintains a short, private video buffer, using
+the high-quality stream regardless of the live-view quality selection. The page's
+monitoring panel shows connection and buffer status. Allow about 10 seconds for
+the pre-event buffer to warm after startup or a camera-settings change.
+
+Each motion event saves roughly 10 seconds before detection and 20 seconds after
+it. Timing follows the camera's video keyframes, so clip boundaries can vary by a
+few seconds. Further motion extends the clip; continuous activity splits into
+clips of roughly two minutes. Interruptions may produce a clip marked **Partial**.
+Recordings use browser-playable H.264/AAC MP4 with fast-start metadata, thumbnails,
+download links and a timeline with clickable red dots at detection times.
+
+Click **Enable desktop alerts** and allow notifications in the browser. Use
+**Test alert** to verify the PC can display them. This preference is specific to
+the browser. Keep the page open and the PC awake for alerts; browser restrictions
+and Windows Do Not Disturb can suppress them. Camera motion is not specific to
+cats and can also include people, other animals or environmental movement.
+Recording continues on the server without an open page. A recording failure does
+not stop motion alerts while the camera's event connection is available.
+
+Unflagged clips expire **72 hours after their first motion event**. The server
+removes expired video, thumbnail and catalog data at startup and at least once a
+minute while running. **Flag to keep** preserves a clip until unflagged. Removing
+the flag from an already-old clip makes it expire immediately; the next cleanup
+removes its files. Flags survive website restarts. The **Flagged** filter lists
+preserved recordings.
+
+Files live outside public assets in `data/catcam/recordings/`; the short rolling
+buffer lives in `data/catcam/buffer/`. Both are excluded from Git. All clip lists,
+videos, thumbnails, flags, status and event streams require enabled admin access.
+Flag requests also require the page's session CSRF token. Admin access is
+rechecked every 15 seconds for an open event feed.
+
+Keep the website and go2rtc running continuously. Recording pauses if less than
+512 MB of disk space remains, and retries automatically; flagged clips are never
+deleted to reclaim space. The monitoring panel reports camera, recording and
+storage problems without exposing connection credentials.
 
 References: [TP-Link RTSP setup](https://www.tp-link.com/us/support/faq/2680/),
 [go2rtc](https://github.com/AlexxIT/go2rtc),
