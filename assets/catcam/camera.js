@@ -57,7 +57,7 @@
         if (attempt !== generation || !wanted) return;
         generation++;
         cleanup();
-        if ([401, 403, 409].includes(error?.status)) {
+        if (error?.actionRequired || [401, 403, 409].includes(error?.status)) {
             stop();
             message.textContent = error.message;
             status('Access or setup needed', 'error');
@@ -124,7 +124,11 @@
                 try {
                     if (typeof event.data === 'string') {
                         const data = JSON.parse(event.data);
-                        if (data.type === 'error') return retry(new Error(data.value), attempt);
+                        if (data.type === 'error') {
+                            const error = new Error(data.value);
+                            error.actionRequired = data.retryable === false;
+                            return retry(error, attempt);
+                        }
                         if (data.type !== 'mse' || sourceBuffer) return;
                         if (!Media.isTypeSupported(data.value)) throw new Error('Unsupported codec');
                         sourceBuffer = currentMedia.addSourceBuffer(data.value);

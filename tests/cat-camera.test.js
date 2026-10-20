@@ -261,3 +261,26 @@ test('an active viewer loses the stream when their database admin role is revoke
     s.accounts.get('admin').user_role = 'streamer';
     assert.equal((await closed)[0], 4003);
 });
+
+test('refused camera ports and rejected logins return actionable errors without endless retries or credential leaks', async t => {
+    const s = await setup(t), form = await s.form();
+    await s.store.save(input);
+    const reasons = ['connect: connection refused', '401 Unauthorized'];
+    s.upstream.on('connection', client => client.once('message', () => {
+        client.send(JSON.stringify({type: 'error', value: `rtsp://${input.username}:${input.password}@${input.host}:554/stream1: ${reasons.shift()}`}));
+    }));
+    for (const expected of [/refusing its RTSP connection/, /camera rejected its login/]) {
+        const client = s.connect(await s.ticket(form), form.cookie);
+        client.on('error', () => {});
+        await once(client, 'open');
+        const received = once(client, 'message');
+        client.send(JSON.stringify({type: 'mse', value: 'avc1.640029'}));
+        const [data] = await received;
+        const error = JSON.parse(data.toString());
+        assert.equal(error.type, 'error');
+        assert.equal(error.retryable, false);
+        assert.match(error.value, expected);
+        assert.doesNotMatch(data.toString(), /private-p|camera-cat|192\.168|rtsp:\/\//);
+        client.terminate();
+    }
+});
