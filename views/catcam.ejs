@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title><%= settings?.title || 'Cat cam' %> · DetschnNet</title>
+    <link rel="icon" href="/img/mage.png">
+    <link rel="stylesheet" href="/catcam/assets/camera.css">
+    <script src="/catcam/assets/camera.js" defer></script>
+</head>
+<body>
+<div class="shell">
+    <nav class="navigation" aria-label="Main navigation">
+        <a class="brand" href="/">Detschn<span>Net</span></a>
+        <div class="navigation-links"><a href="/streamer/">Dashboard</a><span class="admin-badge">Admin only</span></div>
+    </nav>
+    <header class="heading">
+        <div><p class="eyebrow">A little window into their world</p><h1 id="camera-title"><%= settings?.title || 'Cat cam' %></h1>
+            <p class="intro">Check in on your favourite little housemate.</p></div>
+        <span class="account"><span class="account-dot"></span><%= loggedInUser.username %></span>
+    </header>
+    <main>
+        <section class="watch-panel" aria-label="Live camera">
+            <div class="player" id="player">
+                <video id="video" playsinline muted controls hidden aria-label="Live cat camera"></video>
+                <div class="placeholder" id="placeholder">
+                    <svg class="cat" viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M23 46 20 16l27 18h6l27-18-3 30c8 7 12 16 10 25-3 15-18 23-37 23S16 86 13 71c-2-9 2-18 10-25Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M32 61h1m34 0h1M45 72l5 4 5-4M22 73 7 69m16 12L7 84m71-11 15-4m-16 12 16 3" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+                    <h2 id="empty-title"><%= settings ? 'Ready when you are' : 'Meet your new cat cam' %></h2>
+                    <p id="empty-description"><%= settings ? 'Start the live view to see what they’re up to.' : 'Add your camera details below to get started.' %></p>
+                </div>
+                <span class="video-label" id="video-label" hidden><span></span>LIVE VIEW</span>
+            </div>
+            <div class="toolbar">
+                <div class="connection" role="status" aria-live="polite"><span id="status-dot"></span><span id="status">Not connected</span></div>
+                <div class="controls">
+                    <label class="sr-only" for="view-quality">Viewing quality</label>
+                    <select id="view-quality"><option value="high" <%= settings?.quality !== 'low' ? 'selected' : '' %>>High quality</option><option value="low" <%= settings?.quality === 'low' ? 'selected' : '' %>>Low bandwidth</option></select>
+                    <button id="start" class="primary" <%= !settings || setupError ? 'disabled' : '' %>>Start live view</button>
+                    <button id="reconnect" hidden>Reconnect</button>
+                    <button id="fullscreen" aria-label="Open camera fullscreen">Fullscreen</button>
+                </div>
+            </div>
+            <p id="stream-message" class="stream-message" role="alert"></p>
+        </section>
+        <div class="below-player">
+            <div class="privacy-note"><span class="lock" aria-hidden="true">&#128274;</span><div><strong>Just for your admins</strong><p>The live view and camera settings require an active admin account.</p></div></div>
+            <p class="quiet-note">Live view starts muted. Use the video controls for sound when available.</p>
+        </div>
+        <section class="settings-card" aria-labelledby="settings-title">
+            <details id="settings-details" <%= !settings || setupError ? 'open' : '' %>>
+                <summary><div><span class="eyebrow">Your camera</span><h2 id="settings-title">Connection settings</h2></div><span class="settings-toggle" aria-hidden="true">+</span></summary>
+                <div class="settings-content">
+                    <p class="settings-help">Use the <strong>Camera Account</strong> from Tapo → Camera settings → Advanced settings, and the camera’s local IP address.</p>
+                    <% if (!storageReady || setupError) { %>
+                        <p class="notice" role="alert"><%= setupError || 'Server setup is needed before you can save settings. Configure the camera encryption key using docs/cat-camera.md.' %></p>
+                    <% } %>
+                    <form id="camera-settings" data-configured="<%= Boolean(settings) %>">
+                        <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                        <div class="form-grid">
+                            <label>Camera name<input name="title" value="<%= settings?.title || 'Cat cam' %>" maxlength="80" required autocomplete="off"></label>
+                            <label>Default quality<select name="quality"><option value="high" <%= settings?.quality !== 'low' ? 'selected' : '' %>>High quality</option><option value="low" <%= settings?.quality === 'low' ? 'selected' : '' %>>Low bandwidth</option></select></label>
+                            <label>Camera IP address<input name="host" value="<%= settings?.host || '' %>" placeholder="192.168.1.50" required autocomplete="off" inputmode="decimal"></label>
+                            <label>RTSP port<input name="port" type="number" value="<%= settings?.port || 554 %>" min="1" max="65535" required></label>
+                            <label>Camera username<input name="username" value="<%= settings?.username || '' %>" maxlength="64" required autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+                            <label>Camera password<input name="password" type="password" maxlength="128" autocomplete="new-password" <%= settings ? '' : 'required' %> placeholder="<%= settings ? 'Leave blank to keep saved password' : 'Your Tapo Camera Account password' %>"></label>
+                        </div>
+                        <div class="form-footer"><p>Credentials are encrypted on the server. Your saved password is never displayed.</p><button class="primary" id="save" <%= !storageReady || setupError ? 'disabled' : '' %>>Save settings</button></div>
+                        <p id="save-message" class="save-message" role="status" aria-live="polite"></p>
+                    </form>
+                </div>
+            </details>
+        </section>
+    </main>
+    <footer>Tapo C500 · A quiet place to check in.</footer>
+</div>
+</body>
+</html>

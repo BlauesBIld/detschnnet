@@ -56,6 +56,10 @@ app.use(session({
     }
 }));
 
+const {createCameraRouter} = require('./routes/catcam');
+const catCamera = createCameraRouter();
+app.use('/catcam', catCamera.router);
+
 // The temporary gallery uploader authenticates before parsing file bodies.
 const {createGalleryRouter} = require('./routes/gallery');
 app.use('/my/gallery', createGalleryRouter());
@@ -99,7 +103,8 @@ function errorHandler(err, req, res, next) {
 
 app.use(errorHandler);
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
     console.log(`Listening at http://localhost:${port}/workout`);
     require('./services/nightbotTokenRenewal').start();
 });
+catCamera.attach(server);

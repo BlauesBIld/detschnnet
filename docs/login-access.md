@@ -28,7 +28,7 @@ The roles defined by the code are:
 | Role | Access when login is enabled |
 | --- | --- |
 | `streamer` | Dashboard and existing connection features |
-| `admin` | Streamer features, game administration, account registration, gallery uploads |
+| `admin` | Streamer features, game administration, account registration, gallery uploads, private cat camera |
 | `detschn` (owner, effective `admin`) | All admin features plus exclusive control of login access |
 
 The login access page displays roles currently stored in the database, including
