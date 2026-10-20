@@ -162,10 +162,10 @@ the high-quality stream regardless of the live-view quality selection. The page'
 monitoring panel shows connection and buffer status. Allow about 10 seconds for
 the pre-event buffer to warm after startup or a camera-settings change.
 
-Each motion event saves roughly 10 seconds before detection and 20 seconds after
+Each motion event saves roughly 10 seconds before detection and 2 minutes after
 it. Timing follows the camera's video keyframes, so clip boundaries can vary by a
 few seconds. Further motion extends the clip; continuous activity splits into
-clips of roughly two minutes. Interruptions may produce a clip marked **Partial**.
+clips of roughly ten minutes. Interruptions may produce a clip marked **Partial**.
 Recordings use browser-playable H.264/AAC MP4 with fast-start metadata, thumbnails,
 download links and a timeline with clickable red dots at detection times.
 

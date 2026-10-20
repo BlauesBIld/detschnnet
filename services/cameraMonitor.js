@@ -8,7 +8,7 @@ const {createClipStore} = require('./cameraClips');
 const {createDiscordAlerts} = require('./cameraDiscord');
 const {extractCameraJpeg} = require('./cameraSnapshot');
 
-const PRE_MS = 10_000, POST_MS = 20_000, MAX_MS = 120_000;
+const PRE_MS = 10_000, POST_MS = 120_000, MAX_MS = 600_000;
 
 function parseSegments(csv) {
     return csv.trim().split(/\r?\n/).flatMap(line => {
