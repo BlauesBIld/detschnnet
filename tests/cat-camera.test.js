@@ -38,7 +38,9 @@ async function setup(t, {streamLifetime = 60_000, accessInterval = 15_000, feedA
     const auth = createAuthentication({getUserByUuid: async uuid => accounts.get(uuid)});
     const streams = createCameraStreams({streamLifetime, accessInterval});
     const recordings = createClipStore({directory: path.join(directory, 'recordings')});
-    const monitor = {clips: recordings, refresh() {}, status: () => ({enabled: true, sensor: 'listening', recording: 'ready'}), subscribe: () => () => {}};
+    let discordTests = 0;
+    const monitor = {clips: recordings, refresh() {}, status: () => ({enabled: true, sensor: 'listening', recording: 'ready'}), subscribe: () => () => {},
+        async testDiscord() {if (!(await store.read())?.discordWebhookUrl) throw new CameraError('Save a Discord webhook URL first.', 409); discordTests++;}};
     const camera = createCameraRouter({auth, store, bridge, streams, monitor, feedAccessInterval});
     const app = express();
     app.set('views', path.join(__dirname, '../views'));
@@ -84,7 +86,7 @@ async function setup(t, {streamLifetime = 60_000, accessInterval = 15_000, feedA
         return new WebSocket(base.replace('http:', 'ws:') + url, {headers: {Cookie: cookie, Origin: origin}});
     }
     return {directory, filename, key, store, recordings, accounts, streams, upstream, upstreamUrl, bridgeCalls, base,
-        token, loginCookie, request, form, ticket, connect};
+        token, loginCookie, request, form, ticket, connect, discordTests: () => discordTests};
 }
 
 test('all page, asset, settings and ticket routes require an enabled database admin', async t => {
@@ -92,7 +94,7 @@ test('all page, asset, settings and ticket routes require an enabled database ad
     for (const uuid of [null, 'viewer', 'disabled', 'missing']) {
         const cookie = uuid ? s.loginCookie(uuid) : '';
         for (const [url, body] of [['', null], ['/assets/camera.js', null], ['/assets/camera.css', null],
-            ['/assets/motion.js', null], ['/status', null], ['/events', null], ['/clips', null],
+            ['/assets/motion.js', null], ['/assets/discord.js', null], ['/discord/settings', {}], ['/discord/test', {}], ['/status', null], ['/events', null], ['/clips', null],
             ['/clips/00000000-0000-4000-8000-000000000001/video', null], ['/clips/00000000-0000-4000-8000-000000000001/poster', null],
             ['/clips/00000000-0000-4000-8000-000000000001/flag', {flagged: true}], ['/settings', input], ['/ticket', {quality: 'high'}]]) {
             const response = await s.request(url, {cookie, body});
@@ -116,7 +118,7 @@ test('settings survive restart encrypted, never return passwords, and retain a b
     const disk = await fs.readFile(s.filename, 'utf8');
     assert.doesNotMatch(disk, /private-p|camera-cat|192\.168|Milo/);
     const restarted = createCameraStore({filename: s.filename, encryptionKey: () => s.key});
-    assert.deepEqual(await restarted.read(), {...input, port: 554, motionEnabled: true});
+    assert.deepEqual(await restarted.read(), {...input, port: 554, motionEnabled: true, discordWebhookUrl: '', discordEnabled: false, discordCooldownSeconds: 60});
     assert.equal((await s.request('/settings', {cookie: form.cookie,
         body: {...input, password: '', title: 'Updated', csrfToken: form.csrfToken}})).status, 200);
     assert.equal((await restarted.read()).password, input.password);
@@ -316,4 +318,35 @@ test('the live event feed ends when an administrator loses access', async t => {
     let ended = false;
     while (!ended) ended = (await reader.read()).done;
     assert.equal(ended, true);
+});
+
+
+test('Discord settings are encrypted, hidden, admin/CSRF protected and independent of camera settings', async t => {
+    const s = await setup(t), form = await s.form();
+    const webhook = 'https://discord.com/api/webhooks/123456789012345678/abcdefghijklmnopqrstuvwxyz_0123456789';
+    assert.equal((await s.request('/discord/settings', {cookie: form.cookie, body: {discordEnabled: true}})).status, 403);
+    assert.equal((await s.request('/discord/test', {cookie: form.cookie, body: {}})).status, 403);
+    assert.equal((await s.request('/discord/settings', {cookie: form.cookie, body: {csrfToken: form.csrfToken}})).status, 409);
+    await s.store.save(input);
+    assert.equal((await s.request('/discord/test', {cookie: form.cookie, body: {csrfToken: form.csrfToken}})).status, 409);
+    const response = await s.request('/discord/settings', {cookie: form.cookie, body: {csrfToken: form.csrfToken,
+        discordWebhookUrl: webhook, discordEnabled: true, discordCooldownSeconds: 60, host: '192.168.2.2'}});
+    assert.equal(response.status, 200);
+    assert.doesNotMatch(await response.text(), /abcdefghijklmnopqrstuvwxyz|123456789012345678/);
+    assert.equal((await s.store.read()).host, input.host);
+    assert.doesNotMatch(await fs.readFile(s.filename, 'utf8'), /discord|abcdefghijklmnopqrstuvwxyz/);
+    assert.doesNotMatch(await (await s.request('', {cookie: form.cookie})).text(), /abcdefghijklmnopqrstuvwxyz|123456789012345678/);
+    await s.store.save({...input, password: '', title: 'New title'});
+    assert.equal((await s.store.read()).discordWebhookUrl, webhook);
+    await s.store.save({discordWebhookUrl: '', discordCooldownSeconds: 120}, {discordOnly: true});
+    assert.equal((await s.store.read()).discordWebhookUrl, webhook);
+    assert.equal((await s.store.read()).title, 'New title');
+    assert.equal((await s.request('/discord/test', {cookie: form.cookie, body: {csrfToken: form.csrfToken}})).status, 200);
+    assert.equal(s.discordTests(), 1);
+    for (const bad of [{discordWebhookUrl: 'http://127.0.0.1:1984/'}, {discordCooldownSeconds: 1}, {discordEnabled: 'maybe'}]) {
+        assert.equal((await s.request('/discord/settings', {cookie: form.cookie, body: {...bad, csrfToken: form.csrfToken}})).status, 400);
+    }
+    await s.store.save({discordRemove: true}, {discordOnly: true});
+    assert.equal((await s.store.read()).discordWebhookUrl, '');
+    assert.equal((await s.store.read()).password, input.password);
 });

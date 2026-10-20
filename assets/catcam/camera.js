@@ -207,6 +207,7 @@
             document.querySelector('#empty-description').textContent = 'Start live view to monitor the camera.';
             message.textContent = '';
             feedback.textContent = 'Settings saved. Start the live view to test your camera.';
+            form.dispatchEvent(new Event('camera-configured'));
         } catch (error) {feedback.classList.add('error'); feedback.textContent = error.message;}
         finally {save.disabled = false;}
     });

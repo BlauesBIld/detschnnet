@@ -35,12 +35,13 @@ function createCameraRouter({auth = authentication, store = createCameraStore(),
                 setupError = error.message;
             }
             res.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
-            res.render('catcam', {loggedInUser: req.user, csrfToken: csrf(req), settings: settings ? {...settings, password: undefined} : null,
+            res.render('catcam', {loggedInUser: req.user, csrfToken: csrf(req), settings: settings ? {...settings, password: undefined,
+                discordConfigured: Boolean(settings.discordWebhookUrl), discordWebhookUrl: undefined} : null,
                 storageReady: store.ready(), setupError});
         } catch (error) {next(error);}
     });
     router.get('/assets/:file', (req, res) => {
-        const files = {'camera.js': 'application/javascript', 'motion.js': 'application/javascript', 'camera.css': 'text/css'};
+        const files = {'camera.js': 'application/javascript', 'motion.js': 'application/javascript', 'discord.js': 'application/javascript', 'camera.css': 'text/css'};
         if (!Object.hasOwn(files, req.params.file)) return res.sendStatus(404);
         res.type(files[req.params.file]).sendFile(path.join(__dirname, '../assets/catcam', req.params.file));
     });
@@ -62,6 +63,18 @@ function createCameraRouter({auth = authentication, store = createCameraStore(),
             const ticket = streams.issue(req.cookies.accessToken, upstream);
             res.json({url: `/catcam/live?ticket=${ticket}`});
         } catch (error) {next(error);}
+    });
+    router.post('/discord/settings', async (req, res, next) => {
+        try {
+            const settings = await store.save(req.body, {discordOnly: true});
+            monitor.refreshDiscord?.(settings);
+            res.json({saved: true, configured: Boolean(settings.discordWebhookUrl), enabled: settings.discordEnabled,
+                cooldownSeconds: settings.discordCooldownSeconds});
+        } catch (error) {next(error);}
+    });
+    router.post('/discord/test', async (req, res, next) => {
+        try {await monitor.testDiscord(); res.json({sent: true});}
+        catch (error) {next(new CameraError(error.status ? error.message : 'Discord test could not be sent.', error.status || 502));}
     });
     router.get('/status', (req, res) => res.json(monitor.status()));
     router.get('/events', (req, res) => {

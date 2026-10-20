@@ -5,6 +5,7 @@ const {randomUUID, createHash} = require('node:crypto');
 const {EventEmitter} = require('node:events');
 const {watchCameraMotion} = require('./cameraMotion');
 const {createClipStore} = require('./cameraClips');
+const {createDiscordAlerts} = require('./cameraDiscord');
 
 const PRE_MS = 10_000, POST_MS = 20_000, MAX_MS = 120_000;
 
@@ -19,7 +20,7 @@ function parseSegments(csv) {
 
 function createCameraMonitor({store, bridge, clips = createClipStore(), now = Date.now,
     ffmpegPath = process.env.CATCAM_FFMPEG_PATH || require('ffmpeg-static'), spawnImpl = spawn,
-    watchMotion = watchCameraMotion, preMs = PRE_MS, postMs = POST_MS, maxMs = MAX_MS} = {}) {
+    watchMotion = watchCameraMotion, discord = createDiscordAlerts(), preMs = PRE_MS, postMs = POST_MS, maxMs = MAX_MS} = {}) {
     const bus = new EventEmitter();
     bus.setMaxListeners(100);
     const epoch = randomUUID(), history = [];
@@ -37,7 +38,7 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
         if (history.length > 160) history.shift();
         bus.emit('event', event);
     }
-    function snapshot() {return {...state, motionActive};}
+    function snapshot() {return {...state, motionActive, discord: discord.status()};}
     function announce() {
         const value = JSON.stringify(snapshot());
         if (value !== lastState) {lastState = value; publish('status', snapshot());}
@@ -49,6 +50,8 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
             if (recording) motionTimes.push(at);
             state.lastMotionAt = at;
             publish('motion', {at, recording});
+            // Delivery is independent of recording and never delays camera events.
+            discord.send().then(announce, announce);
         }
         motionActive = active;
         announce();
@@ -227,14 +230,15 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
             if (!settingsChecked || now() - settingsChecked >= 5000) {
                 settingsChecked = now();
                 const value = await store.read();
+                discord.configure(value);
                 const next = value ? createHash('sha256').update(JSON.stringify([value.host, value.port, value.username, value.password, value.motionEnabled])).digest('hex') : '';
                 if (next !== fingerprint) {
                     await stopSource();
-                    settings = value;
                     fingerprint = next;
                     broken = false;
                     state.enabled = Boolean(value && value.motionEnabled !== false);
                 }
+                settings = value;
             }
             if (!state.enabled) {
                 state.recording = 'disabled'; state.sensor = 'disabled'; announce(); return;
@@ -291,6 +295,11 @@ function createCameraMonitor({store, bridge, clips = createClipStore(), now = Da
             await tick();
         },
         refresh() {settingsChecked = 0;},
+        refreshDiscord(value) {discord.configure(value); settingsChecked = 0; announce();},
+        async testDiscord() {
+            discord.configure(await store.read());
+            try {return await discord.send({test: true});} finally {announce();}
+        },
         clipsChanged() {publish('clips', {});},
         // Events are already sanitized and contain no camera credentials or URLs.
         subscribe(listener, after) {

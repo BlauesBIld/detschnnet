@@ -11,6 +11,7 @@ const ffmpeg = require('ffmpeg-static');
 const {createClipStore, RETENTION_MS} = require('../services/cameraClips');
 const {motionEvent} = require('../services/cameraMotion');
 const {createCameraMonitor, parseSegments} = require('../services/cameraMonitor');
+const {createDiscordAlerts} = require('../services/cameraDiscord');
 
 async function temporary(t) {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'detschn-recording-test-'));
@@ -111,20 +112,26 @@ test('motion notifications continue when the recording runtime is unavailable', 
     t.after(async () => monitor?.stop());
     const root = await temporary(t), clips = createClipStore({directory: path.join(root, 'recordings')});
     const events = [];
-    let sensorClosed = false;
+    let sensorClosed = false, discordMessages = 0;
+    const discord = createDiscordAlerts({fetchImpl: async () => {discordMessages++; return new Response('{}', {status: 200});}});
     monitor = createCameraMonitor({clips, ffmpegPath: path.join(root, 'missing-ffmpeg'),
-        store: {read: async () => ({host: '192.168.1.50', motionEnabled: true})},
+        discord, store: {read: async () => ({host: '192.168.1.50', motionEnabled: true, discordEnabled: true,
+            discordWebhookUrl: 'https://discord.com/api/webhooks/123456789012345678/abcdefghijklmnopqrstuvwxyz_0123456789'})},
         bridge: {recordingUrl: async () => 'http://127.0.0.1/unavailable'},
         watchMotion: (settings, {onStatus}) => {onStatus('listening'); return {close() {sensorClosed = true;}};}});
     monitor.subscribe(event => events.push(event));
     await monitor.start();
     await waitFor(() => monitor.status().recording === 'error');
     monitor.noteMotion(true);
+    monitor.noteMotion(true);
     monitor.noteMotion(false);
+    await waitFor(() => discord.status().lastSentAt);
     assert.equal(monitor.status().sensor, 'listening');
     assert.equal(sensorClosed, false);
     assert.ok(events.some(event => event.type === 'motion' && event.data.recording === false));
     assert.equal((await clips.list()).clips.length, 0);
+    assert.equal(discordMessages, 1);
+    assert.doesNotMatch(JSON.stringify(events), /abcdefghijklmnopqrstuvwxyz|webhooks/);
 });
 
 test('real FFmpeg captures pre/post-event footage, saves playable H.264/AAC MP4 and aligns motion markers', {timeout: 35000}, async t => {

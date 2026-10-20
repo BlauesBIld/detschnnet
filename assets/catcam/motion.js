@@ -67,6 +67,10 @@
         $('.motion-panel').dataset.active = String(Boolean(state.motionActive));
         $('#last-motion').textContent = state.lastMotionAt ? `Last motion: ${date(state.lastMotionAt)}` : 'No motion received since the monitor started.';
         $('#monitor-warning').textContent = state.warning || '';
+        if (state.discord) {
+            $('#discord-delivery').textContent = state.discord.lastError || (state.discord.lastSentAt ?
+                `Last Discord message: ${date(state.discord.lastSentAt)}` : state.discord.enabled ? 'Discord alerts enabled. Waiting for motion.' : 'Discord alerts disabled.');
+        }
     }
     function clipLabel(clip) {
         if (clip.status === 'recording') return 'Recording…';

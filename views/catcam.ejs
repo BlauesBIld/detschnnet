@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/catcam/assets/camera.css">
     <script src="/catcam/assets/camera.js" defer></script>
     <script src="/catcam/assets/motion.js" defer></script>
+    <script src="/catcam/assets/discord.js" defer></script>
 </head>
 <body>
 <div class="shell">
@@ -48,6 +49,26 @@
                 <p id="last-motion">No motion received in this session.</p><p>Keep Motion Detection enabled in the Tapo app.</p><p id="monitor-warning" class="stream-message" role="alert"></p></div>
             <div class="alert-controls"><button id="enable-notifications">Enable desktop alerts</button><button id="test-notification" hidden>Test alert</button>
                 <small id="notification-help">Keep this page open to receive desktop alerts.</small></div>
+        </section>
+        <section class="settings-card discord-card" aria-labelledby="discord-title">
+            <details>
+                <summary><div><h2 id="discord-title">Discord alerts</h2></div><span class="settings-toggle" aria-hidden="true">+</span></summary>
+                <div class="settings-content">
+                    <p class="settings-help">Send “Motion detected on camera, please check” to your Discord channel. Alerts run on the server even when this page is closed. Save changes before testing.</p>
+                    <form id="discord-settings">
+                        <div class="form-grid">
+                            <label>Discord notifications<select name="discordEnabled"><option value="false" <%= !settings?.discordEnabled ? 'selected' : '' %>>Disabled</option><option value="true" <%= settings?.discordEnabled ? 'selected' : '' %>>Enabled</option></select></label>
+                            <label>Message cooldown (seconds)<input type="number" name="discordCooldownSeconds" value="<%= settings?.discordCooldownSeconds || 60 %>" min="15" max="3600" required></label>
+                            <label class="webhook-field">Discord webhook URL<input type="password" name="discordWebhookUrl" maxlength="400" autocomplete="new-password" spellcheck="false" placeholder="<%= settings?.discordConfigured ? 'Webhook saved — leave blank to keep it' : 'https://discord.com/api/webhooks/…' %>"></label>
+                        </div>
+                        <label class="checkbox-label"><input type="checkbox" name="discordRemove">Remove the saved webhook and disable Discord alerts</label>
+                        <p id="discord-configured" class="settings-help"><%= settings?.discordConfigured ? 'A webhook is saved securely. Its URL is never displayed.' : 'No webhook saved. Save the camera connection settings first if needed.' %></p>
+                        <div class="discord-actions"><button class="primary" id="save-discord" <%= !settings || !storageReady || setupError ? 'disabled' : '' %>>Save Discord settings</button><button type="button" id="test-discord" <%= !settings?.discordConfigured ? 'disabled' : '' %>>Send test message</button></div>
+                        <p id="discord-feedback" class="save-message" role="status" aria-live="polite"></p>
+                    </form>
+                    <p id="discord-delivery" class="settings-help" role="status" aria-live="polite"></p>
+                </div>
+            </details>
         </section>
         <section class="recordings-panel" aria-labelledby="recordings-title">
             <div class="recordings-heading"><div><h2 id="recordings-title">Motion recordings</h2><p>Clips include about 10 seconds before motion and 20 seconds afterward. Unflagged clips expire after 3 days.</p></div>

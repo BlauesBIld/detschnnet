@@ -195,6 +195,36 @@ Keep the website and go2rtc running continuously. Recording pauses if less than
 deleted to reclaim space. The monitoring panel reports camera, recording and
 storage problems without exposing connection credentials.
 
+## 7. Discord alerts
+
+On the admin camera page, expand **Discord alerts**, paste a Discord incoming
+webhook URL, select **Enabled**, and save. Create the webhook in the destination
+Discord channel's **Integrations → Webhooks** settings. Use **Send test message**
+after saving to check delivery. The channel receives “Motion detected on camera,
+please check” with a link to the admin camera page; images, video, camera IP and
+camera credentials are not included. Discord messages continue when the browser
+is closed, while the website's motion monitoring is enabled.
+
+The default message cooldown is 60 seconds, adjustable from 15 to 3600 seconds.
+Repeated active-state events do not create more messages. Motion that restarts
+during the cooldown still records video normally, but does not send another
+Discord message. Tests share the cooldown. Failed requests are not queued or
+retried, so there is no delayed message flood; a later motion event can try again.
+Discord rate-limit responses can extend the waiting period. The page reports the
+last delivery time or a short delivery error.
+
+The webhook URL contains a secret token and is encrypted with the camera settings.
+It is never displayed after saving. A blank URL keeps the saved webhook; the
+removal checkbox clears it and disables Discord alerts. Discord settings can be
+changed without disconnecting live viewers or restarting the recorder. Only
+standard HTTPS Discord incoming webhook URLs are accepted, and redirects are
+blocked. Saving and testing require admin access and the page's CSRF token.
+
+All motion remains eligible for recording and alerts. The C500's person detection
+does not make non-person motion a reliable cat classification. For a lost-cat
+search, keep all-motion coverage; any future classifier should initially add
+labels for review rather than suppress recordings or alerts.
+
 References: [TP-Link RTSP setup](https://www.tp-link.com/us/support/faq/2680/),
 [go2rtc](https://github.com/AlexxIT/go2rtc),
 [go2rtc WebSocket protocol](https://github.com/AlexxIT/go2rtc/blob/master/internal/api/ws/README.md).

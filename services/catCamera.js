@@ -4,6 +4,7 @@ const net = require('node:net');
 const {randomBytes, createCipheriv, createDecipheriv, createHash} = require('node:crypto');
 const {WebSocket, WebSocketServer} = require('ws');
 const cookieParser = require('cookie-parser');
+const {validateDiscordWebhook} = require('./cameraDiscord');
 
 class CameraError extends Error {
     constructor(message, status = 400) {super(message); this.status = status;}
@@ -28,7 +29,24 @@ function validateSettings(input, previous = {}) {
     if (!['high', 'low'].includes(input.quality)) throw new CameraError('Choose a video quality.');
     const motionEnabled = input.motionEnabled === undefined ? previous.motionEnabled ?? true : input.motionEnabled;
     if (![true, false, 'true', 'false'].includes(motionEnabled)) throw new CameraError('Choose whether motion monitoring is enabled.');
-    return {title, host, port, username, password, quality: input.quality, motionEnabled: motionEnabled === true || motionEnabled === 'true'};
+    const bool = (value, fallback) => {
+        value = value === undefined ? fallback : value;
+        if (![true, false, 'true', 'false'].includes(value)) throw new CameraError('Choose whether Discord alerts are enabled.');
+        return value === true || value === 'true';
+    };
+    let discordWebhookUrl;
+    try {discordWebhookUrl = validateDiscordWebhook(input.discordWebhookUrl === '' || input.discordWebhookUrl === undefined ?
+        previous.discordWebhookUrl || '' : input.discordWebhookUrl);} catch (error) {throw new CameraError(error.message);}
+    const discordRemove = bool(input.discordRemove, false);
+    if (discordRemove) discordWebhookUrl = '';
+    const discordEnabled = !discordRemove && bool(input.discordEnabled, previous.discordEnabled ?? false);
+    const discordCooldownSeconds = Number(input.discordCooldownSeconds ?? previous.discordCooldownSeconds ?? 60);
+    if (!Number.isInteger(discordCooldownSeconds) || discordCooldownSeconds < 15 || discordCooldownSeconds > 3600) {
+        throw new CameraError('Choose a Discord cooldown between 15 and 3600 seconds.');
+    }
+    if (discordEnabled && !discordWebhookUrl) throw new CameraError('Save a Discord webhook URL before enabling alerts.');
+    return {title, host, port, username, password, quality: input.quality, motionEnabled: motionEnabled === true || motionEnabled === 'true',
+        discordWebhookUrl, discordEnabled, discordCooldownSeconds};
 }
 
 function createCameraStore({filename = path.join(__dirname, '../data/catcam/settings.enc'),
@@ -58,9 +76,13 @@ function createCameraStore({filename = path.join(__dirname, '../data/catcam/sett
                 return validateSettings(JSON.parse(plaintext.toString('utf8')));
             } catch {throw new CameraError('Camera settings could not be unlocked. Check the server encryption key.', 503);}
         },
-        async save(input) {
+        async save(input, {discordOnly = false} = {}) {
             const operation = pending.then(async () => {
-                const settings = validateSettings(input, await this.read() || {});
+                const previous = await this.read();
+                if (discordOnly && !previous) throw new CameraError('Save your camera settings first.', 409);
+                const allowed = discordOnly ? Object.fromEntries(['discordWebhookUrl', 'discordEnabled', 'discordCooldownSeconds', 'discordRemove']
+                    .filter(key => Object.hasOwn(input, key)).map(key => [key, input[key]])) : input;
+                const settings = validateSettings(discordOnly ? {...previous, ...allowed} : allowed, previous || {});
                 const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', key(), iv);
                 const data = Buffer.concat([cipher.update(JSON.stringify(settings), 'utf8'), cipher.final()]);
                 const contents = JSON.stringify({version: 1, iv: iv.toString('hex'), tag: cipher.getAuthTag().toString('hex'), data: data.toString('hex')});
