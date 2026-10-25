@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
+const {randomBytes, createCipheriv} = require('node:crypto');
 const {once} = require('node:events');
 const express = require('express');
 const cookieParser = require('cookie-parser');
@@ -320,6 +321,29 @@ test('the live event feed ends when an administrator loses access', async t => {
     assert.equal(ended, true);
 });
 
+
+test('legacy settings pause Discord without losing the webhook, and checkbox choices survive restarts', async t => {
+    const s = await setup(t);
+    const webhook = 'https://discord.com/api/webhooks/123456789012345678/abcdefghijklmnopqrstuvwxyz_0123456789';
+    const legacy = validateSettings({...input, discordEnabled: true, discordWebhookUrl: webhook});
+    const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', Buffer.from(s.key, 'hex'), iv);
+    const data = Buffer.concat([cipher.update(JSON.stringify(legacy), 'utf8'), cipher.final()]);
+    await fs.writeFile(s.filename, JSON.stringify({version: 1, iv: iv.toString('hex'),
+        tag: cipher.getAuthTag().toString('hex'), data: data.toString('hex')}));
+    assert.deepEqual(await s.store.read(), {...legacy, discordEnabled: false});
+    const form = await s.form();
+    assert.match(form.html, /type="checkbox" name="discordEnabled"\s*>/);
+    for (const enabled of [true, false]) {
+        const response = await s.request('/discord/settings', {cookie: form.cookie,
+            body: {csrfToken: form.csrfToken, discordEnabled: enabled, discordWebhookUrl: ''}});
+        assert.equal(response.status, 200);
+        assert.equal((await response.json()).enabled, enabled);
+        const restarted = createCameraStore({filename: s.filename, encryptionKey: () => s.key});
+        assert.deepEqual(await restarted.read(), {...legacy, discordEnabled: enabled});
+        const html = (await s.form()).html;
+        assert.match(html, enabled ? /type="checkbox" name="discordEnabled" checked/ : /type="checkbox" name="discordEnabled"\s*>/);
+    }
+});
 
 test('Discord settings are encrypted, hidden, admin/CSRF protected and independent of camera settings', async t => {
     const s = await setup(t), form = await s.form();

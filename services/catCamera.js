@@ -73,7 +73,11 @@ function createCameraStore({filename = path.join(__dirname, '../data/catcam/sett
                 const decipher = createDecipheriv('aes-256-gcm', secret, Buffer.from(value.iv, 'hex'));
                 decipher.setAuthTag(Buffer.from(value.tag, 'hex'));
                 const plaintext = Buffer.concat([decipher.update(Buffer.from(value.data, 'hex')), decipher.final()]);
-                return validateSettings(JSON.parse(plaintext.toString('utf8')));
+                const settings = JSON.parse(plaintext.toString('utf8'));
+                // Pause existing alerts once for the notification-checkbox rollout.
+                // Keep the webhook; saving the new checkbox persists the next choice.
+                if (value.version === 1) settings.discordEnabled = false;
+                return validateSettings(settings);
             } catch {throw new CameraError('Camera settings could not be unlocked. Check the server encryption key.', 503);}
         },
         async save(input, {discordOnly = false} = {}) {
@@ -85,7 +89,7 @@ function createCameraStore({filename = path.join(__dirname, '../data/catcam/sett
                 const settings = validateSettings(discordOnly ? {...previous, ...allowed} : allowed, previous || {});
                 const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', key(), iv);
                 const data = Buffer.concat([cipher.update(JSON.stringify(settings), 'utf8'), cipher.final()]);
-                const contents = JSON.stringify({version: 1, iv: iv.toString('hex'), tag: cipher.getAuthTag().toString('hex'), data: data.toString('hex')});
+                const contents = JSON.stringify({version: 2, iv: iv.toString('hex'), tag: cipher.getAuthTag().toString('hex'), data: data.toString('hex')});
                 const temporary = `${filename}.${randomBytes(8).toString('hex')}.tmp`;
                 try {
                     await fs.mkdir(path.dirname(filename), {recursive: true, mode: 0o700});

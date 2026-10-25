@@ -1,8 +1,45 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 const {validateDiscordWebhook, createDiscordAlerts} = require('../services/cameraDiscord');
 const url = 'https://discord.com/api/webhooks/123456789012345678/abcdefghijklmnopqrstuvwxyz_0123456789';
 const settings = {discordWebhookUrl: url, discordEnabled: true, discordCooldownSeconds: 60};
+
+test('the website saves the Discord checkbox state and keeps the webhook when unchecked', async () => {
+    const elements = new Map(), calls = [];
+    const get = selector => {
+        if (!elements.has(selector)) elements.set(selector, {disabled: false, classList: {add() {}, remove() {}},
+            listeners: {}, addEventListener(type, callback) {this.listeners[type] = callback;}});
+        return elements.get(selector);
+    };
+    const fields = {discordEnabled: {checked: false, value: 'on'}, discordRemove: {checked: false},
+        discordWebhookUrl: {value: ''}, discordCooldownSeconds: {value: '60'}};
+    get('#discord-settings').elements = fields;
+    get('#camera-settings').elements = {csrfToken: {value: 'page-token'}};
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../assets/catcam/discord.js'), 'utf8'), {
+        document: {querySelector: get}, fetch: async (target, options) => {
+            const body = JSON.parse(options.body);
+            calls.push({target, body});
+            return {ok: true, headers: {get: () => 'application/json'},
+                json: async () => ({configured: true, enabled: body.discordEnabled, cooldownSeconds: 60})};
+        }
+    });
+    for (const enabled of [false, true, false]) {
+        fields.discordEnabled.checked = enabled;
+        await get('#discord-settings').listeners.submit({preventDefault() {}});
+        const {target, body} = calls.at(-1);
+        assert.equal(target, '/catcam/discord/settings');
+        assert.equal(body.discordEnabled, enabled);
+        assert.equal(body.discordRemove, false);
+        assert.equal(body.discordWebhookUrl, '');
+        assert.equal(body.csrfToken, 'page-token');
+        assert.equal(fields.discordEnabled.checked, enabled);
+        assert.equal(get('#test-discord').disabled, false);
+    }
+    assert.match(get('#discord-feedback').textContent, /webhook is still saved/);
+});
 
 test('Discord destinations reject private URLs, deceptive hosts, credentials and redirects', async () => {
     assert.equal(validateDiscordWebhook(url), url);

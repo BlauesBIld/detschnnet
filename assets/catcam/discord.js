@@ -23,15 +23,16 @@
         let result;
         try {
             const fields = form.elements;
-            result = await request('/catcam/discord/settings', {discordEnabled: fields.discordRemove.checked ? 'false' : fields.discordEnabled.value,
+            result = await request('/catcam/discord/settings', {discordEnabled: !fields.discordRemove.checked && fields.discordEnabled.checked,
                 discordCooldownSeconds: fields.discordCooldownSeconds.value, discordWebhookUrl: fields.discordWebhookUrl.value,
                 discordRemove: fields.discordRemove.checked});
             fields.discordWebhookUrl.value = '';
             fields.discordWebhookUrl.placeholder = result.configured ? 'Webhook saved — leave blank to keep it' : 'https://discord.com/api/webhooks/…';
             fields.discordRemove.checked = false;
-            fields.discordEnabled.value = String(result.enabled);
+            fields.discordEnabled.checked = result.enabled;
             document.querySelector('#discord-configured').textContent = result.configured ? 'A webhook is saved securely. Its URL is never displayed.' : 'No webhook saved.';
-            feedback.textContent = result.enabled ? `Discord alerts enabled. At most one message every ${result.cooldownSeconds} seconds.` : 'Discord alerts disabled.';
+            feedback.textContent = result.enabled ? `Discord alerts enabled. At most one message every ${result.cooldownSeconds} seconds.` :
+                result.configured ? 'Discord alerts disabled. Your webhook is still saved.' : 'Discord alerts disabled.';
         } catch (error) {feedback.classList.add('error'); feedback.textContent = error.message;}
         finally {save.disabled = false; test.disabled = result ? !result.configured : testWasDisabled;}
     });

@@ -56,8 +56,9 @@
                 <div class="settings-content">
                     <p class="settings-help">Send “Motion detected on camera, please check” with a screenshot from the motion event to your Discord channel. Alerts run on the server even when this page is closed. Save changes before testing; the test includes a current camera screenshot.</p>
                     <form id="discord-settings">
+                        <label class="checkbox-label"><input type="checkbox" name="discordEnabled" <%= settings?.discordEnabled ? 'checked' : '' %>>Send Discord messages for camera motion</label>
+                        <p class="settings-help">Uncheck and save to pause automatic messages while keeping the saved webhook. Motion recording continues.</p>
                         <div class="form-grid">
-                            <label>Discord notifications<select name="discordEnabled"><option value="false" <%= !settings?.discordEnabled ? 'selected' : '' %>>Disabled</option><option value="true" <%= settings?.discordEnabled ? 'selected' : '' %>>Enabled</option></select></label>
                             <label>Message cooldown (seconds)<input type="number" name="discordCooldownSeconds" value="<%= settings?.discordCooldownSeconds || 60 %>" min="15" max="3600" required></label>
                             <label class="webhook-field">Discord webhook URL<input type="password" name="discordWebhookUrl" maxlength="400" autocomplete="new-password" spellcheck="false" placeholder="<%= settings?.discordConfigured ? 'Webhook saved — leave blank to keep it' : 'https://discord.com/api/webhooks/…' %>"></label>
                         </div>

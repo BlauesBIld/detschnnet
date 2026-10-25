@@ -211,7 +211,7 @@ storage problems without exposing connection credentials.
 ## 7. Discord alerts
 
 On the admin camera page, expand **Discord alerts**, paste a Discord incoming
-webhook URL, select **Enabled**, and save. Create the webhook in the destination
+webhook URL, check **Send Discord messages for camera motion**, and save. Create the webhook in the destination
 Discord channel's **Integrations → Webhooks** settings. Use **Send test message**
 after saving to check delivery. The channel receives “Motion detected on camera,
 please check” with a JPEG screenshot from the motion event and a link to the admin
@@ -239,7 +239,12 @@ Discord rate-limit responses can extend the waiting period. The page reports the
 last delivery time or a short delivery error.
 
 The webhook URL contains a secret token and is encrypted with the camera settings.
-It is never displayed after saving. A blank URL keeps the saved webhook; the
+It is never displayed after saving. Uncheck **Send Discord messages for camera
+motion** and save to disable automatic messages while keeping the webhook and
+motion recording. The checkbox update initially pauses Discord alerts for existing
+saved settings; check it and save to resume. This choice survives restarts.
+**Send test message** still sends a manual test while automatic messages are disabled.
+A blank URL keeps the saved webhook; the
 removal checkbox clears it and disables Discord alerts. Discord settings can be
 changed without disconnecting live viewers or restarting the recorder. Only
 standard HTTPS Discord incoming webhook URLs are accepted, and redirects are
